@@ -8,6 +8,7 @@ import chalk from 'chalk';
 import {
   BenchmarkConfig,
   BenchmarkMode,
+  DeadModelInfo,
   ModelHealthStatus,
   MultiModelBenchmarkReport
 } from './types.js';
@@ -17,7 +18,8 @@ import { BenchmarkReporter } from './reporter.js';
 import {
   fetchRouterModels,
   POPULAR_MODEL_PRESETS,
-  ALL_MODELS_KEY,
+  QUICK_SCAN_KEY,
+  DEEP_STRESS_ALL_KEY,
   CUSTOM_MODEL_KEY
 } from './models.js';
 
@@ -27,12 +29,13 @@ const program = new Command();
 
 program
   .name('9router-stress-test')
-  .description('High-performance CLI stress-testing and rate-limit benchmarking tool for 9Router and Universal AI Gateways.')
-  .version('1.1.0')
+  .description('High-performance CLI stress-testing, health scanner, and rate-limit benchmarking tool for 9Router and Universal AI Gateways.')
+  .version('1.2.0')
   .option('-u, --url <url>', 'AI Router endpoint URL', process.env.ROUTER_URL || 'http://localhost:20128/v1')
   .option('-k, --key <key>', 'AI Router API Key', process.env.API_KEY || '9router')
   .option('-m, --model <model>', 'Target model to test', process.env.DEFAULT_MODEL || 'claude-3-5-sonnet')
-  .option('-a, --all-models', 'Test ALL discovered models sequentially', false)
+  .option('-q, --quick-scan', 'Run instant Quick Health Scan (paralel 3-5s untuk cek model hidup/mati)', false)
+  .option('-a, --all-models', 'Deep stress test ALL discovered models with burst load', false)
   .option('-b, --burst <number>', 'Burst requests count (total or per-model)', '15')
   .option('-c, --concurrency <number>', 'Concurrent workers', '5')
   .option('--mode <mode>', 'Test mode: rpm (minimal token) or tpm (heavy token)', 'rpm')
@@ -79,8 +82,12 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
     modelSpinner.succeed(chalk.green(`Berhasil menemukan ${fetchedModels.length} model aktif dari router!`));
     modelChoices = [
       {
-        name: chalk.yellow.bold(`🔥 [UJI SEMUA MODEL SEKALIGUS] (${fetchedModels.length} Model - Health Check & Limit Test)`),
-        value: ALL_MODELS_KEY
+        name: chalk.green.bold(`🩺 [QUICK HEALTH SCAN] Pindai Cepat Model Hidup & Mati (3-5 Detik Selesai)`),
+        value: QUICK_SCAN_KEY
+      },
+      {
+        name: chalk.yellow.bold(`💥 [DEEP STRESS TEST] Uji Limit & Throughput Semua Model (${fetchedModels.length} Model)`),
+        value: DEEP_STRESS_ALL_KEY
       },
       ...fetchedModels.map(m => ({ name: `🤖 ${m}`, value: m })),
       { name: chalk.gray('✏️  [Ketik nama model kustom secara manual...]'), value: CUSTOM_MODEL_KEY }
@@ -91,33 +98,39 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
     );
     modelChoices = [
       {
-        name: chalk.yellow.bold(`🔥 [UJI SEMUA MODEL PRESET SEKALIGUS] (${POPULAR_MODEL_PRESETS.length} Model Populer)`),
-        value: ALL_MODELS_KEY
+        name: chalk.green.bold(`🩺 [QUICK HEALTH SCAN] Pindai Cepat Model Populer Hidup & Mati`),
+        value: QUICK_SCAN_KEY
+      },
+      {
+        name: chalk.yellow.bold(`💥 [DEEP STRESS TEST] Uji Limit Seluruh Model Populer`),
+        value: DEEP_STRESS_ALL_KEY
       },
       ...POPULAR_MODEL_PRESETS.map(m => ({ name: `🤖 ${m}`, value: m })),
       { name: chalk.gray('✏️  [Ketik nama model kustom secara manual...]'), value: CUSTOM_MODEL_KEY }
     ];
   }
 
-  // Step 3: Select model and parameters
+  // Step 3: Select Action or Model
   const testAnswers = await inquirer.prompt([
     {
       type: 'list',
-      name: 'selectedModel',
-      message: 'Pilih Target AI Model yang ingin diuji:',
+      name: 'selectedOption',
+      message: 'Pilih Aksi Pengujian:',
       choices: modelChoices,
-      default: defaults.allModels
-        ? ALL_MODELS_KEY
-        : defaults.model && modelChoices.some(c => c.value === defaults.model)
-          ? defaults.model
-          : modelChoices[0].value,
+      default: defaults.scanMode === 'quick-scan'
+        ? QUICK_SCAN_KEY
+        : defaults.allModels
+          ? DEEP_STRESS_ALL_KEY
+          : defaults.model && modelChoices.some(c => c.value === defaults.model)
+            ? defaults.model
+            : modelChoices[0].value,
       pageSize: 15
     },
     {
       type: 'input',
       name: 'customModel',
       message: 'Masukkan nama model AI:',
-      when: (ans: any) => ans.selectedModel === CUSTOM_MODEL_KEY,
+      when: (ans: any) => ans.selectedOption === CUSTOM_MODEL_KEY,
       validate: (input: string) => input.trim().length > 0 || 'Model tidak boleh kosong'
     },
     {
@@ -134,23 +147,26 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
           value: 'tpm'
         }
       ],
-      default: defaults.mode || 'rpm'
+      default: defaults.mode || 'rpm',
+      when: (ans: any) => ans.selectedOption !== QUICK_SCAN_KEY
     },
     {
       type: 'number',
       name: 'burstTotal',
-      message: (ans: any) => ans.selectedModel === ALL_MODELS_KEY
-        ? 'Jumlah Panggilan per Model (misal: 3 - cepat & hemat kuota):'
+      message: (ans: any) => ans.selectedOption === DEEP_STRESS_ALL_KEY
+        ? 'Jumlah Panggilan per Model (misal: 3-5 - cepat & hemat kuota):'
         : 'Total Burst Request (jumlah panggilan):',
-      default: (ans: any) => ans.selectedModel === ALL_MODELS_KEY ? 3 : (defaults.burstTotal || 20),
-      validate: (val: number) => val > 0 || 'Harus lebih dari 0'
+      default: (ans: any) => ans.selectedOption === DEEP_STRESS_ALL_KEY ? 3 : (defaults.burstTotal || 20),
+      validate: (val: number) => val > 0 || 'Harus lebih dari 0',
+      when: (ans: any) => ans.selectedOption !== QUICK_SCAN_KEY
     },
     {
       type: 'number',
       name: 'concurrency',
       message: 'Konkurensi Paralel (jumlah worker bersamaan):',
       default: defaults.concurrency || 5,
-      validate: (val: number) => val > 0 || 'Harus lebih dari 0'
+      validate: (val: number) => val > 0 || 'Harus lebih dari 0',
+      when: (ans: any) => ans.selectedOption !== QUICK_SCAN_KEY
     },
     {
       type: 'confirm',
@@ -162,32 +178,38 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
       type: 'input',
       name: 'exportPath',
       message: 'Lokasi simpan file JSON:',
-      default: (ans: any) => ans.selectedModel === ALL_MODELS_KEY
-        ? 'reports/all-models-report.json'
-        : 'reports/benchmark-result.json',
+      default: (ans: any) => {
+        if (ans.selectedOption === QUICK_SCAN_KEY) return 'reports/health-scan-report.json';
+        if (ans.selectedOption === DEEP_STRESS_ALL_KEY) return 'reports/all-models-report.json';
+        return 'reports/benchmark-result.json';
+      },
       when: (ans: any) => ans.saveReport
     }
   ]);
 
-  const isAllModels = testAnswers.selectedModel === ALL_MODELS_KEY;
-  const targetModel = isAllModels
+  const isQuickScan = testAnswers.selectedOption === QUICK_SCAN_KEY;
+  const isDeepStressAll = testAnswers.selectedOption === DEEP_STRESS_ALL_KEY;
+  const isAll = isQuickScan || isDeepStressAll;
+
+  const targetModel = isAll
     ? availableModelList[0]
-    : testAnswers.selectedModel === CUSTOM_MODEL_KEY
+    : testAnswers.selectedOption === CUSTOM_MODEL_KEY
       ? testAnswers.customModel
-      : testAnswers.selectedModel;
+      : testAnswers.selectedOption;
 
   return {
     url: connectionAnswers.url,
     apiKey: connectionAnswers.apiKey,
     model: targetModel,
-    burstTotal: testAnswers.burstTotal,
-    concurrency: testAnswers.concurrency,
-    mode: testAnswers.mode as BenchmarkMode,
-    timeoutMs: defaults.timeoutMs || 30000,
+    burstTotal: isQuickScan ? 1 : (testAnswers.burstTotal || 15),
+    concurrency: isQuickScan ? 4 : (testAnswers.concurrency || 5),
+    mode: isQuickScan ? 'rpm' : (testAnswers.mode as BenchmarkMode || 'rpm'),
+    timeoutMs: defaults.timeoutMs || 25000,
     stream: defaults.stream || false,
     exportPath: testAnswers.exportPath,
-    allModels: isAllModels,
-    modelList: availableModelList
+    allModels: isAll,
+    modelList: availableModelList,
+    scanMode: isQuickScan ? 'quick-scan' : isDeepStressAll ? 'deep-stress' : 'single-model'
   };
 }
 
@@ -196,35 +218,48 @@ async function runMultiModelBenchmark(config: BenchmarkConfig) {
     ? config.modelList
     : POPULAR_MODEL_PRESETS;
 
+  const isQuickScan = config.scanMode === 'quick-scan';
+
   console.log('\n' + chalk.bold.cyan('╔═══════════════════════════════════════════════════════════╗'));
-  console.log(chalk.bold.cyan('║      ALL-MODELS BATCH HEALTH & STRESS TEST LAUNCHED       ║'));
+  if (isQuickScan) {
+    console.log(chalk.bold.green('║   🩺 QUICK HEALTH SCAN: DIAGNOSTIK MODEL HIDUP / MATI     ║'));
+  } else {
+    console.log(chalk.bold.yellow('║   💥 DEEP STRESS TEST: PENGUJIAN LIMIT SELURUH MODEL      ║'));
+  }
   console.log(chalk.bold.cyan('╚═══════════════════════════════════════════════════════════╝'));
   console.log(chalk.gray(`Target URL     : `) + chalk.white.bold(config.url));
   console.log(chalk.gray(`Total Models   : `) + chalk.yellow.bold(modelsToTest.length.toString()) + chalk.gray(` models`));
-  console.log(chalk.gray(`Req per Model  : `) + chalk.green.bold(config.burstTotal.toString()) + chalk.gray(` requests`));
+  console.log(chalk.gray(`Method         : `) + (isQuickScan ? chalk.green.bold('1 Probe per Model (Paralel Cepat)') : chalk.yellow.bold(`${config.burstTotal} Requests per Model (Burst)`)));
   console.log(chalk.gray(`Test Mode      : `) + chalk.magenta.bold(config.mode.toUpperCase()));
   console.log('─'.repeat(60) + '\n');
 
   const multiReport: MultiModelBenchmarkReport = {
     timestamp: new Date().toISOString(),
     routerUrl: config.url,
+    scanMode: isQuickScan ? 'quick-scan' : 'deep-stress',
     totalModelsTested: modelsToTest.length,
     healthyModelsCount: 0,
     rateLimitedCount: 0,
     failedModelsCount: 0,
+    activeModelsList: [],
+    deadModelsList: [],
     models: []
   };
 
-  for (let i = 0; i < modelsToTest.length; i++) {
-    const currentModel = modelsToTest[i];
-    const spinner = ora({
-      text: chalk.cyan(`[${i + 1}/${modelsToTest.length}] Menguji model: ${chalk.bold(currentModel)}...`),
-      color: 'yellow'
-    }).start();
+  const spinner = ora({
+    text: chalk.cyan(`Memulai pemindaian ${modelsToTest.length} model...`),
+    color: 'yellow'
+  }).start();
 
+  let completedModels = 0;
+
+  // Function to benchmark a single model
+  const benchmarkOneModel = async (modelName: string): Promise<any> => {
     const singleConfig: BenchmarkConfig = {
       ...config,
-      model: currentModel
+      model: modelName,
+      burstTotal: isQuickScan ? 1 : config.burstTotal,
+      concurrency: isQuickScan ? 1 : config.concurrency
     };
 
     const engine = new StressTestEngine(singleConfig);
@@ -247,31 +282,28 @@ async function runMultiModelBenchmark(config: BenchmarkConfig) {
     if (rateLimitCount > 0) {
       status = 'RATE_LIMITED';
       note = `Rate Limit 429 (${rateLimitCount}/${total} rejected)`;
-      multiReport.rateLimitedCount++;
-      spinner.warn(chalk.red(`[${i + 1}/${modelsToTest.length}] ${currentModel} -> 🚨 RATE LIMITED (429)`));
     } else if (successCount === total) {
       if (fallbackCount > 0) {
         status = 'FALLBACK';
         const fallbackInfo = results.find(r => r.fallbackInfo)?.fallbackInfo || 'Swapped';
         note = `Fallback triggered (${fallbackInfo})`;
-        multiReport.healthyModelsCount++;
-        spinner.info(chalk.yellow(`[${i + 1}/${modelsToTest.length}] ${currentModel} -> ⚡ FALLBACK OK (${avgLatencyMs}ms)`));
       } else {
         status = 'HEALTHY';
         note = 'All OK';
-        multiReport.healthyModelsCount++;
-        spinner.succeed(chalk.green(`[${i + 1}/${modelsToTest.length}] ${currentModel} -> ✔ ACTIVE (100% OK, ${avgLatencyMs}ms)`));
       }
     } else {
       status = 'FAILED';
       const sampleErr = results.find(r => r.error)?.error || 'Dead / Inactive';
       note = sampleErr.slice(0, 45);
-      multiReport.failedModelsCount++;
-      spinner.fail(chalk.red(`[${i + 1}/${modelsToTest.length}] ${currentModel} -> ✖ DEAD / FAILED (${note})`));
     }
 
-    multiReport.models.push({
-      model: currentModel,
+    completedModels++;
+    spinner.text = `[${completedModels}/${modelsToTest.length}] Memindai: ${chalk.bold(modelName)} | ` +
+      `${chalk.green('Aktif: ' + multiReport.healthyModelsCount)} | ` +
+      `${chalk.red('Mati: ' + multiReport.failedModelsCount)}`;
+
+    return {
+      model: modelName,
       totalRequests: total,
       successCount,
       rateLimitCount,
@@ -279,8 +311,47 @@ async function runMultiModelBenchmark(config: BenchmarkConfig) {
       avgLatencyMs,
       status,
       note
-    });
+    };
+  };
+
+  // Run with concurrency worker queue for speed
+  const parallelWorkerLimit = isQuickScan ? 4 : 2;
+  const queue = [...modelsToTest];
+  const workers: Promise<void>[] = [];
+
+  const worker = async () => {
+    while (queue.length > 0) {
+      const nextModel = queue.shift();
+      if (!nextModel) break;
+      const modelResult = await benchmarkOneModel(nextModel);
+
+      if (modelResult.status === 'HEALTHY' || modelResult.status === 'FALLBACK') {
+        multiReport.healthyModelsCount++;
+        multiReport.activeModelsList.push(modelResult.model);
+      } else if (modelResult.status === 'RATE_LIMITED') {
+        multiReport.rateLimitedCount++;
+      } else {
+        multiReport.failedModelsCount++;
+        multiReport.deadModelsList.push({
+          model: modelResult.model,
+          error: modelResult.note || 'Failed'
+        });
+      }
+
+      multiReport.models.push(modelResult);
+    }
+  };
+
+  for (let w = 0; w < Math.min(parallelWorkerLimit, modelsToTest.length); w++) {
+    workers.push(worker());
   }
+
+  await Promise.all(workers);
+
+  spinner.succeed(chalk.green(`Pemindaian selesai: ${modelsToTest.length} model telah dievaluasi.`));
+
+  // Sort report models to match original order
+  multiReport.models.sort((a, b) => modelsToTest.indexOf(a.model) - modelsToTest.indexOf(b.model));
 
   BenchmarkReporter.printMultiModelSummary(multiReport, config.exportPath);
 }
@@ -343,11 +414,15 @@ async function main() {
       timeoutMs: parseInt(opts.timeout, 10),
       stream: Boolean(opts.stream),
       exportPath: opts.export,
-      allModels: Boolean(opts.allModels)
+      allModels: Boolean(opts.allModels || opts.quickScan),
+      scanMode: opts.quickScan ? 'quick-scan' : opts.allModels ? 'deep-stress' : undefined
     });
   } else {
+    const isQuickScan = Boolean(opts.quickScan);
+    const isAll = isQuickScan || Boolean(opts.allModels);
+
     let modelList: string[] | undefined;
-    if (opts.allModels) {
+    if (isAll) {
       const fetched = await fetchRouterModels(opts.url, opts.key);
       modelList = fetched.length > 0 ? fetched : POPULAR_MODEL_PRESETS;
     }
@@ -356,14 +431,15 @@ async function main() {
       url: opts.url,
       apiKey: opts.key,
       model: opts.model,
-      burstTotal: parseInt(opts.burst, 10),
-      concurrency: parseInt(opts.concurrency, 10),
+      burstTotal: isQuickScan ? 1 : parseInt(opts.burst, 10),
+      concurrency: isQuickScan ? 4 : parseInt(opts.concurrency, 10),
       mode: (opts.mode.toLowerCase() === 'tpm' ? 'tpm' : 'rpm') as BenchmarkMode,
       timeoutMs: parseInt(opts.timeout, 10),
       stream: Boolean(opts.stream),
       exportPath: opts.export,
-      allModels: Boolean(opts.allModels),
-      modelList
+      allModels: isAll,
+      modelList,
+      scanMode: isQuickScan ? 'quick-scan' : opts.allModels ? 'deep-stress' : 'single-model'
     };
   }
 

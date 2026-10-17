@@ -12,6 +12,7 @@ export interface BenchmarkConfig {
   stream: boolean;
   allModels?: boolean;
   modelList?: string[];
+  scanMode?: 'quick-scan' | 'deep-stress' | 'single-model';
 }
 
 export interface TokenUsage {
@@ -84,12 +85,20 @@ export interface ModelTestSummary {
   note?: string;
 }
 
+export interface DeadModelInfo {
+  model: string;
+  error: string;
+}
+
 export interface MultiModelBenchmarkReport {
   timestamp: string;
   routerUrl: string;
+  scanMode: 'quick-scan' | 'deep-stress';
   totalModelsTested: number;
   healthyModelsCount: number;
   rateLimitedCount: number;
   failedModelsCount: number;
+  activeModelsList: string[];
+  deadModelsList: DeadModelInfo[];
   models: ModelTestSummary[];
 }

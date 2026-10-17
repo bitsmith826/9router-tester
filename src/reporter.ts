@@ -234,6 +234,30 @@ export class BenchmarkReporter {
       console.log(chalk.red(`  ✖ Failed / Dead Models    : ${report.failedModelsCount}`));
     }
 
+    // Copy-pasteable list for Cursor / Cline
+    if (report.activeModelsList && report.activeModelsList.length > 0) {
+      console.log('\n' + chalk.bold.green('╔═══════════════════════════════════════════════════════════╗'));
+      console.log(chalk.bold.green('║  📋 MODEL AKTIF SIAP PAKAI (Copy-Paste ke Cursor/Cline)   ║'));
+      console.log(chalk.bold.green('╚═══════════════════════════════════════════════════════════╝'));
+      console.log(chalk.gray('  Format Comma-Separated (untuk setting Cursor):'));
+      console.log(chalk.white.bold(`  ${report.activeModelsList.join(', ')}\n`));
+      console.log(chalk.gray('  Daftar Satuan:'));
+      for (const mod of report.activeModelsList) {
+        console.log(chalk.green(`   ✔ ${mod}`));
+      }
+    }
+
+    // Dead / Failed models alert
+    if (report.deadModelsList && report.deadModelsList.length > 0) {
+      console.log('\n' + chalk.bold.red('╔═══════════════════════════════════════════════════════════╗'));
+      console.log(chalk.bold.red('║  ⚠️  MODEL MATI / TIDAK BISA DIPAKAI (Nonaktifkan di 9Router)║'));
+      console.log(chalk.bold.red('╚═══════════════════════════════════════════════════════════╝'));
+      console.log(chalk.gray('  Model-model berikut gagal merespon / API key tidak valid:'));
+      for (const d of report.deadModelsList) {
+        console.log(chalk.red(`   ✖ ${chalk.bold(d.model)}: ${chalk.gray(d.error)}`));
+      }
+    }
+
     if (exportPath) {
       this.exportMultiModelToJson(exportPath, report);
     }

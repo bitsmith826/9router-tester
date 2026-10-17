@@ -1,3 +1,5 @@
+export const QUICK_SCAN_KEY = '__QUICK_HEALTH_SCAN__';
+export const DEEP_STRESS_ALL_KEY = '__DEEP_STRESS_ALL__';
 export const ALL_MODELS_KEY = '__ALL_MODELS__';
 export const CUSTOM_MODEL_KEY = '__CUSTOM_MODEL_INPUT__';
 

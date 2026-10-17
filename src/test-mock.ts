@@ -125,15 +125,18 @@ server.listen(PORT, async () => {
     const mockMultiReport = {
       timestamp: new Date().toISOString(),
       routerUrl: `http://127.0.0.1:${PORT}/v1`,
-      totalModelsTested: 3,
+      scanMode: 'quick-scan' as const,
+      totalModelsTested: 4,
       healthyModelsCount: 2,
       rateLimitedCount: 1,
-      failedModelsCount: 0,
+      failedModelsCount: 1,
+      activeModelsList: ['claude-3-5-sonnet', 'deepseek-chat'],
+      deadModelsList: [{ model: 'mistral-large', error: 'HTTP 401: Invalid Key / Dead' }],
       models: [
         {
           model: 'claude-3-5-sonnet',
-          totalRequests: 3,
-          successCount: 3,
+          totalRequests: 1,
+          successCount: 1,
           rateLimitCount: 0,
           errorCount: 0,
           avgLatencyMs: 32,
@@ -142,8 +145,8 @@ server.listen(PORT, async () => {
         },
         {
           model: 'deepseek-chat',
-          totalRequests: 3,
-          successCount: 3,
+          totalRequests: 1,
+          successCount: 1,
           rateLimitCount: 0,
           errorCount: 0,
           avgLatencyMs: 25,
@@ -152,13 +155,23 @@ server.listen(PORT, async () => {
         },
         {
           model: 'gpt-4o',
-          totalRequests: 3,
-          successCount: 1,
-          rateLimitCount: 2,
+          totalRequests: 1,
+          successCount: 0,
+          rateLimitCount: 1,
           errorCount: 0,
           avgLatencyMs: 40,
           status: 'RATE_LIMITED' as const,
           note: 'Rate limit 429'
+        },
+        {
+          model: 'mistral-large',
+          totalRequests: 1,
+          successCount: 0,
+          rateLimitCount: 0,
+          errorCount: 1,
+          avgLatencyMs: 0,
+          status: 'FAILED' as const,
+          note: 'HTTP 401: Invalid Key / Dead'
         }
       ]
     };
