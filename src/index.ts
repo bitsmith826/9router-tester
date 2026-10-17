@@ -69,7 +69,7 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
     {
       type: 'input',
       name: 'apiKey',
-      message: 'API Key (kosongkan jika tidak perlu):',
+      message: 'API Key (tekan Enter jika 9Router lokal tanpa password):',
       default: defaults.apiKey || '9router'
     }
   ]);
