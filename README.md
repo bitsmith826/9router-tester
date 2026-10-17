@@ -12,6 +12,56 @@
 
 ---
 
+## ⚡ 30-Second Quickstart (Khusus Pengguna 9Router di Laptop)
+
+Jika Anda menjalankan **9Router di laptop Anda (`localhost:20128`)**, Anda bisa langsung menguji batas limit provider dalam hitungan detik tanpa perlu mengubah file konfigurasi apa pun:
+
+```bash
+# 1. Clone repositori ini
+git clone https://github.com/your-username/9router-stress-test.git
+cd 9router-stress-test
+
+# 2. Install dependensi & build
+npm install
+npm run build
+
+# 3. Jalankan pengujian interaktif
+npm start
+```
+
+### 🖥️ Simulasi Tampilan di Terminal Anda:
+
+```text
+╔═══════════════════════════════════════════════════════════╗
+║      UNIVERSAL AI ROUTER & GATEWAY STRESS TESTER          ║
+║  (9Router, One API, New API, LiteLLM, OpenRouter, Ollama) ║
+╚═══════════════════════════════════════════════════════════╝
+
+? AI Router Endpoint URL: http://localhost:20128/v1   <-- [Tekan Enter]
+? API Key (kosongkan jika tidak perlu): 9router       <-- [Tekan Enter]
+✔ Berhasil menemukan 12 model aktif dari 9Router!
+
+? Pilih Target AI Model yang ingin diuji:
+  > 🤖 claude-3-5-sonnet                             <-- [Gunakan panah, pilih model lalu Enter]
+    🤖 claude-3-5-haiku
+    🤖 gpt-4o
+    🤖 deepseek-chat
+    ✏️  [Ketik nama model kustom secara manual...]
+
+? Mode Pengujian Beban:
+  > RPM Mode (Hemat token: 1 prompt ping, max 5 token - fokus menabrak limit)  <-- [Tekan Enter]
+    TPM Mode (Beban token tinggi: payload konteks panjang)
+
+? Total Burst Request (jumlah panggilan): 20          <-- [Tekan Enter]
+? Konkurensi Paralel (jumlah worker bersamaan): 5     <-- [Tekan Enter]
+? Simpan laporan benchmark ke file JSON? Yes          <-- [Tekan Enter]
+
+✔ Stress test finished: 20 requests executed.
+[Tabel persentil latensi dan deteksi rate limit 429 langsung muncul!]
+```
+
+---
+
 ## 🌟 Key Features / Fitur Utama
 
 - 🔍 **Dynamic Model Discovery (`/v1/models`):** Otomatis menghubungi endpoint router Anda untuk mengambil daftar model aktif yang tersedia dan menampilkannya sebagai pilihan di terminal. Juga menyediakan daftar preset model AI terpopuler (Claude 3.5, GPT-4o, Gemini 2.0, DeepSeek, Llama 3, Qwen) serta opsi ketik manual.
