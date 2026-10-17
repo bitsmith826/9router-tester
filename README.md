@@ -197,27 +197,6 @@ Concurrency  : 5 concurrent workers
 
 ---
 
-## ❓ FAQ & Pertanyaan Umum
-
-### 1. Apa Itu Base URL dan API Key 9Router?
-- **Base URL:** Alamat endpoint 9Router Anda. Jika dijalankan di laptop lokal, nilai standarnya adalah `http://localhost:20128/v1`.
-- **API Key:** Sama persis seperti konfigurasi di Cursor / Cline, 9Router menggunakan default API Key `9router`. Anda cukup menekan **Enter** saat wizard menanyakan API Key.
-- Jika Anda memasang custom API Key di 9Router (misal saat dideploy di VPS publik), baru masukkan API Key yang Anda tentukan tersebut.
-
-### 2. File `.env` Buat Apa? Apakah Wajib?
-- **TIDAK WAJIB.** Tool ini langsung jalan 100% tanpa perlu membuat file `.env`.
-- **Fungsi `.env`:** Hanya sebagai *shortcut* jika Anda menjalankan 9Router di remote VPS / Cloudflare Tunnel dan tidak ingin mengetikkan URL/API Key setiap kali membuka terminal.
-- Jika ingin menyimpannya di file `.env`:
-  ```bash
-  # Windows (Command Prompt / CMD):
-  copy .env.example .env
-
-  # Linux / macOS / PowerShell:
-  cp .env.example .env
-  ```
-
----
-
 ## 🧪 Menjalankan Mock Verification Test
 
 Anda dapat memverifikasi seluruh fungsi pelaporan, kalkulasi latensi, dan deteksi 429/fallback secara offline tanpa memerlukan koneksi internet:
