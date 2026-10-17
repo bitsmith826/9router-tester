@@ -24,6 +24,8 @@ export class BenchmarkReporter {
     // 1. Core Metrics Table
     const overviewTable = new Table({
       head: [chalk.cyan('Metric'), chalk.cyan('Value')],
+      colWidths: [26, 26],
+      wordWrap: true,
       style: { head: [], border: ['gray'] }
     });
 
@@ -52,6 +54,8 @@ export class BenchmarkReporter {
         chalk.cyan('p99'),
         chalk.cyan('Max')
       ],
+      colWidths: [9, 9, 9, 9, 9, 9, 9],
+      wordWrap: true,
       style: { head: [], border: ['gray'] }
     });
 
@@ -80,6 +84,8 @@ export class BenchmarkReporter {
           chalk.cyan('p99'),
           chalk.cyan('Max TTFT')
         ],
+        colWidths: [9, 9, 9, 9, 9, 9, 9],
+        wordWrap: true,
         style: { head: [], border: ['gray'] }
       });
 
@@ -108,6 +114,8 @@ export class BenchmarkReporter {
 
       const modelTable = new Table({
         head: [chalk.yellow('Provider / Model Responded'), chalk.yellow('Request Count')],
+        colWidths: [36, 16],
+        wordWrap: true,
         style: { head: [], border: ['gray'] }
       });
 
@@ -190,22 +198,23 @@ export class BenchmarkReporter {
         chalk.cyan('Model Name'),
         chalk.cyan('Status'),
         chalk.cyan('Pass Rate'),
-        chalk.cyan('Avg Latency'),
-        chalk.cyan('Notes / Fallback')
+        chalk.cyan('Latency')
       ],
+      colWidths: [36, 12, 13, 10],
+      wordWrap: true,
       style: { head: [], border: ['gray'] }
     });
 
     for (const m of report.models) {
       let statusBadge = '';
       if (m.status === 'HEALTHY') {
-        statusBadge = chalk.green.bold('✔ ACTIVE (200)');
+        statusBadge = chalk.green.bold('OK (200)');
       } else if (m.status === 'FALLBACK') {
-        statusBadge = chalk.yellow.bold('⚡ FALLBACK (200)');
+        statusBadge = chalk.yellow.bold('FALLBACK');
       } else if (m.status === 'RATE_LIMITED') {
-        statusBadge = chalk.red.bold('🚨 RATE LIMIT (429)');
+        statusBadge = chalk.red.bold('429 LIMIT');
       } else {
-        statusBadge = chalk.red('✖ FAILED');
+        statusBadge = chalk.red('DEAD');
       }
 
       const passRate = `${m.successCount}/${m.totalRequests} (${Math.round((m.successCount / m.totalRequests) * 100)}%)`;
@@ -219,8 +228,7 @@ export class BenchmarkReporter {
         chalk.white.bold(m.model),
         statusBadge,
         passRateColor,
-        m.avgLatencyMs > 0 ? `${m.avgLatencyMs}ms` : chalk.gray('-'),
-        m.note ? chalk.gray(m.note) : chalk.gray('None')
+        m.avgLatencyMs > 0 ? `${m.avgLatencyMs}ms` : chalk.gray('-')
       ]);
     }
 
