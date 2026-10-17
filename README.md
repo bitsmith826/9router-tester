@@ -1,14 +1,16 @@
-# ⚡ Universal AI Router & Gateway Stress Tester
-### *(9Router • One API • New API • LiteLLM • OpenRouter • Ollama • vLLM)*
+# ⚡ 9Router Stress Test & AI Model Doctor
+### *High-Performance Rate-Limit Benchmark, Health Scanner & Fallback Tester for 9Router*
+*(Also compatible with One API, New API, LiteLLM, OpenRouter, Ollama & vLLM)*
 
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Universal OpenAI Compatible](https://img.shields.io/badge/OpenAI--API-Compatible-412991)](https://platform.openai.com/)
+[![9Router Compatible](https://img.shields.io/badge/9Router-Compatible-FF6B6B)](https://github.com/decolua/9router)
+[![OpenAI Compatible](https://img.shields.io/badge/OpenAI--API-Compatible-412991)](https://platform.openai.com/)
 
-> **High-performance CLI benchmarking, rate-limit stress-testing, and dynamic model discovery tool for ANY AI Gateway / Router (9Router, One API, New API, LiteLLM, OpenRouter, Ollama, vLLM, Portkey).**
+> **High-performance CLI benchmarking, rate-limit stress-testing, and dynamic model discovery tool tailored for 9Router (also compatible with One API, New API, LiteLLM, OpenRouter, Ollama, vLLM).**
 > 
-> *Uji batas rate limit (HTTP 429 / RPM / TPM) upstream provider AI dan validasi apakah fitur Smart Auto-Fallback router Anda bekerja mulus tanpa memutus koneksi.*
+> *Uji batas rate limit (HTTP 429 / RPM / TPM) provider AI dan validasi apakah fitur Smart Auto-Fallback 9Router Anda bekerja mulus tanpa memutus koneksi.*
 
 ---
 
@@ -33,8 +35,8 @@ npm start
 
 ```text
 ╔═══════════════════════════════════════════════════════════╗
-║      UNIVERSAL AI ROUTER & GATEWAY STRESS TESTER          ║
-║  (9Router, One API, New API, LiteLLM, OpenRouter, Ollama) ║
+║           9ROUTER STRESS TEST & AI MODEL DOCTOR           ║
+║  (Compatible with 9Router, One API, LiteLLM, OpenRouter)  ║
 ╚═══════════════════════════════════════════════════════════╝
 
 ? AI Router Endpoint URL: http://localhost:20128/v1   <-- [Tekan Enter]

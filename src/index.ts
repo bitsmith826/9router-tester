@@ -46,8 +46,8 @@ program
 
 async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Promise<BenchmarkConfig> {
   console.log('\n' + chalk.cyan.bold('╔═══════════════════════════════════════════════════════════╗'));
-  console.log(chalk.cyan.bold('║      UNIVERSAL AI ROUTER & GATEWAY STRESS TESTER          ║'));
-  console.log(chalk.cyan.bold('║  (9Router, One API, New API, LiteLLM, OpenRouter, Ollama) ║'));
+  console.log(chalk.cyan.bold('║           9ROUTER STRESS TEST & AI MODEL DOCTOR           ║'));
+  console.log(chalk.cyan.bold('║  (Compatible with 9Router, One API, LiteLLM, OpenRouter)  ║'));
   console.log(chalk.cyan.bold('╚═══════════════════════════════════════════════════════════╝\n'));
 
   // Step 1: Endpoint & Auth
