@@ -18,7 +18,7 @@ Jika Anda menjalankan **9Router di laptop Anda (`localhost:20128`)**, Anda bisa 
 
 ```bash
 # 1. Clone repositori ini
-git clone https://github.com/your-username/9router-stress-test.git
+git clone https://github.com/bitsmith826/9router-stress-test.git
 cd 9router-stress-test
 
 # 2. Install dependensi & build
@@ -89,7 +89,7 @@ npm start
 
 ```bash
 # Clone repositori
-git clone https://github.com/your-username/9router-stress-test.git
+git clone https://github.com/bitsmith826/9router-stress-test.git
 cd 9router-stress-test
 
 # Install dependencies

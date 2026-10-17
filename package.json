@@ -18,7 +18,12 @@
     "openai-compatible",
     "fallback-detection"
   ],
-  "author": "Antigravity Open Source",
+  "author": "bitsmith826",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bitsmith826/9router-stress-test.git"
+  },
+  "homepage": "https://github.com/bitsmith826/9router-stress-test#readme",
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
