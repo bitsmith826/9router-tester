@@ -195,15 +195,28 @@ export class BenchmarkReporter {
 
     const table = new Table({
       head: [
-        chalk.cyan('Model Name'),
-        chalk.cyan('Status'),
-        chalk.cyan('Pass Rate'),
-        chalk.cyan('Latency')
+        chalk.cyan.bold('Model Name'),
+        chalk.cyan.bold('Status'),
+        chalk.cyan.bold('Pass Rate'),
+        chalk.cyan.bold('Latency')
       ],
-      colWidths: [36, 12, 13, 10],
+      colWidths: [38, 12, 13, 10],
       wordWrap: true,
-      style: { head: [], border: ['gray'] }
+      chars: {
+        'top': '', 'top-mid': '', 'top-left': '', 'top-right': '',
+        'bottom': '', 'bottom-mid': '', 'bottom-left': '', 'bottom-right': '',
+        'left': '', 'left-mid': '', 'mid': '', 'mid-mid': '',
+        'right': '', 'right-mid': '', 'middle': '  '
+      },
+      style: { 'padding-left': 0, 'padding-right': 0, head: [] }
     });
+
+    table.push([
+      chalk.gray('─'.repeat(38)),
+      chalk.gray('─'.repeat(12)),
+      chalk.gray('─'.repeat(13)),
+      chalk.gray('─'.repeat(10))
+    ]);
 
     for (const m of report.models) {
       let statusBadge = '';
@@ -214,7 +227,7 @@ export class BenchmarkReporter {
       } else if (m.status === 'RATE_LIMITED') {
         statusBadge = chalk.red.bold('429 LIMIT');
       } else {
-        statusBadge = chalk.red('DEAD');
+        statusBadge = chalk.red.bold('DEAD');
       }
 
       const passRate = `${m.successCount}/${m.totalRequests} (${Math.round((m.successCount / m.totalRequests) * 100)}%)`;
@@ -225,7 +238,7 @@ export class BenchmarkReporter {
           : chalk.red(passRate);
 
       table.push([
-        chalk.white.bold(m.model),
+        chalk.white(m.model),
         statusBadge,
         passRateColor,
         m.avgLatencyMs > 0 ? `${m.avgLatencyMs}ms` : chalk.gray('-')
