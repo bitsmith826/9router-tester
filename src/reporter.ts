@@ -7,7 +7,8 @@ import { BenchmarkSummary, RequestResult } from './types.js';
 export class BenchmarkReporter {
   public static printHeader(summaryConfig: any) {
     console.log('\n' + chalk.bold.cyan('╔═══════════════════════════════════════════════════════════╗'));
-    console.log(chalk.bold.cyan('║            9ROUTER AI STRESS-TEST BENCHMARK               ║'));
+    console.log(chalk.bold.cyan('║         UNIVERSAL AI ROUTER & GATEWAY BENCHMARK           ║'));
+    console.log(chalk.bold.cyan('║  9Router • One API • New API • LiteLLM • OpenRouter • vLLM║'));
     console.log(chalk.bold.cyan('╚═══════════════════════════════════════════════════════════╝'));
     console.log(chalk.gray(`Target URL   : `) + chalk.white.bold(summaryConfig.url));
     console.log(chalk.gray(`Target Model : `) + chalk.yellow.bold(summaryConfig.model));

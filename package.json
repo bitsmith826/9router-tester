@@ -1,9 +1,14 @@
 {
   "name": "9router-stress-test",
   "version": "1.0.0",
-  "description": "High-performance CLI stress-testing and rate-limit benchmarking tool for 9Router AI Gateway and its upstream providers.",
+  "description": "High-performance CLI stress-testing, rate-limit benchmarking, and dynamic model discovery tool for ANY AI Gateway / Router (9Router, One API, New API, LiteLLM, OpenRouter, Ollama, vLLM).",
   "keywords": [
+    "ai-router",
     "9router",
+    "one-api",
+    "new-api",
+    "litellm",
+    "openrouter",
     "ai-proxy",
     "stress-test",
     "load-test",

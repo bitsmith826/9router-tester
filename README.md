@@ -1,24 +1,27 @@
-# ⚡ 9Router AI Stress Tester
+# ⚡ Universal AI Router & Gateway Stress Tester
+### *(9Router • One API • New API • LiteLLM • OpenRouter • Ollama • vLLM)*
 
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![9Router Compatible](https://img.shields.io/badge/9Router-Compatible-FF6B6B)](https://github.com/decolua/9router)
+[![Universal OpenAI Compatible](https://img.shields.io/badge/OpenAI--API-Compatible-412991)](https://platform.openai.com/)
 
-> **High-performance CLI benchmarking and stress-testing tool tailored for [9Router](https://github.com/decolua/9router) and its upstream AI providers.**
+> **High-performance CLI benchmarking, rate-limit stress-testing, and dynamic model discovery tool for ANY AI Gateway / Router (9Router, One API, New API, LiteLLM, OpenRouter, Ollama, vLLM, Portkey).**
 > 
-> *Uji batas rate limit (HTTP 429 / RPM / TPM) provider AI dan validasi apakah fitur Smart Auto-Fallback 9Router Anda bekerja mulus tanpa error.*
+> *Uji batas rate limit (HTTP 429 / RPM / TPM) upstream provider AI dan validasi apakah fitur Smart Auto-Fallback router Anda bekerja mulus tanpa memutus koneksi.*
 
 ---
 
 ## 🌟 Key Features / Fitur Utama
 
+- 🔍 **Dynamic Model Discovery (`/v1/models`):** Otomatis menghubungi endpoint router Anda untuk mengambil daftar model aktif yang tersedia dan menampilkannya sebagai pilihan di terminal. Juga menyediakan daftar preset model AI terpopuler (Claude 3.5, GPT-4o, Gemini 2.0, DeepSeek, Llama 3, Qwen) serta opsi ketik manual.
+- 🌐 **Universal Gateway Support:** Dirancang untuk bekerja dengan semua proxy OpenAI-compatible: **9Router**, **One API**, **New API**, **LiteLLM**, **OpenRouter**, **Portkey**, **Ollama**, **vLLM**, atau endpoint mandiri.
 - 💥 **Aggressive Burst Engine:** Kirim lonjakan request serentak dalam hitungan milidetik untuk menguji ketahanan gateway dan mendeteksi titik rate-limit provider seketika.
-- 🛡️ **Smart Fallback Detection:** Otomatis mendeteksi saat provider utama limit dan 9Router mengalihkan request ke model lapis kedua (misal: Claude $\rightarrow$ DeepSeek/Gemini).
+- 🛡️ **Universal Smart Fallback Detection:** Otomatis mendeteksi saat provider utama limit dan router mengalihkan request ke model lapis kedua (misal: Claude $\rightarrow$ DeepSeek/Gemini) lewat inspeksi model respon dan header gateway.
 - 💰 **Dual Testing Modes:**
   - **`--mode rpm` (Hemat Token):** Menggunakan prompt 1 kata (`ping`) dan `max_tokens: 5`. Menghantam batas panggilan per menit tanpa membakar kuota/biaya API.
   - **`--mode tpm` (Beban Token Berat):** Mengirim payload token besar (konteks 1000+ token) untuk menguji kuota token per menit upstream.
-- 🧙 **Interactive CLI Wizard:** Cukup jalankan `npm start`, dan wizard interaktif (tanya-jawab) akan memandu Anda menentukan URL, Model, dan Concurrency.
+- 🧙 **Interactive CLI Wizard:** Cukup jalankan `npm start`, dan wizard interaktif (tanya-jawab) akan memandu Anda menentukan URL, memilih Model dari daftar, dan mengatur Concurrency.
 - ⏱️ **Comprehensive Metrics:** Menghitung Throughput (RPS), status code breakdown, serta tabel persentil latensi lengkap (`p50`, `p90`, `p95`, `p99`, `Min`, `Max`, `Avg`).
 - 📁 **JSON Export:** Simpan hasil pengujian lengkap ke file JSON untuk audit atau benchmarking performa berkala.
 
@@ -28,7 +31,7 @@
 
 ### 1. Prasyarat
 - [Node.js](https://nodejs.org/) v18.0.0 atau lebih baru.
-- Instance **9Router** yang sedang aktif (di localhost, VPS, atau via Cloudflare Tunnel).
+- Instance AI Router yang sedang aktif (9Router, One API, LiteLLM, Ollama, VPS, atau Cloudflare Tunnel).
 
 ### 2. Instalasi
 

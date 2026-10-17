@@ -51,9 +51,20 @@ export class StressTestEngine {
       const statusCode = response.status;
       const respHeaders = Object.fromEntries(response.headers.entries());
 
-      // Check 9Router specific headers if exposed
-      const fallbackHeader = respHeaders['x-9router-fallback'] || respHeaders['x-fallback-provider'];
-      const providerHeader = respHeaders['x-9router-provider'];
+      // Check router headers across any AI gateway (9Router, LiteLLM, One API, Portkey, OpenRouter, Cloudflare, etc.)
+      const fallbackHeader = respHeaders['x-9router-fallback'] ||
+        respHeaders['x-litellm-fallback-model'] ||
+        respHeaders['x-fallback-model'] ||
+        respHeaders['x-fallback-provider'] ||
+        respHeaders['x-portkey-fallback'];
+
+      const providerHeader = respHeaders['x-9router-provider'] ||
+        respHeaders['x-litellm-proxy-provider'] ||
+        respHeaders['x-openrouter-provider'] ||
+        respHeaders['x-portkey-provider'] ||
+        respHeaders['x-oneapi-provider'] ||
+        respHeaders['x-newapi-provider'] ||
+        respHeaders['x-upstream-provider'];
 
       if (!response.ok) {
         let errorBody = '';

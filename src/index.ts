@@ -29,41 +29,88 @@ program
   .option('-o, --export <path>', 'Path to save detailed JSON report')
   .option('-i, --interactive', 'Launch interactive setup wizard', false);
 
-async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Promise<BenchmarkConfig> {
-  console.log('\n' + chalk.cyan.bold('🧙 9ROUTER STRESS TEST - SETUP WIZARD'));
-  console.log(chalk.gray('Configure your stress test parameters below:\n'));
+import { fetchRouterModels, POPULAR_MODEL_PRESETS } from './models.js';
 
-  const answers = await inquirer.prompt([
+async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Promise<BenchmarkConfig> {
+  console.log('\n' + chalk.cyan.bold('╔═══════════════════════════════════════════════════════════╗'));
+  console.log(chalk.cyan.bold('║      UNIVERSAL AI ROUTER & GATEWAY STRESS TESTER          ║'));
+  console.log(chalk.cyan.bold('║  (9Router, One API, New API, LiteLLM, OpenRouter, Ollama) ║'));
+  console.log(chalk.cyan.bold('╚═══════════════════════════════════════════════════════════╝\n'));
+
+  // Step 1: Endpoint & Auth
+  const connectionAnswers = await inquirer.prompt([
     {
       type: 'input',
       name: 'url',
-      message: '9Router Endpoint URL:',
+      message: 'AI Router Endpoint URL:',
       default: defaults.url || 'http://localhost:20128/v1',
       validate: (input: string) => input.trim().length > 0 || 'URL cannot be empty'
     },
     {
       type: 'input',
       name: 'apiKey',
-      message: '9Router API Key:',
+      message: 'API Key (kosongkan jika tidak perlu):',
       default: defaults.apiKey || '9router'
+    }
+  ]);
+
+  // Step 2: Fetch model list dynamically from the router
+  const modelSpinner = ora({
+    text: chalk.gray(`Menghubungi ${connectionAnswers.url} untuk mengambil daftar model AI (/v1/models)...`),
+    color: 'yellow'
+  }).start();
+
+  const fetchedModels = await fetchRouterModels(connectionAnswers.url, connectionAnswers.apiKey);
+  
+  let modelChoices: Array<{ name: string; value: string }>;
+  const CUSTOM_MODEL_KEY = '__CUSTOM_MODEL_INPUT__';
+
+  if (fetchedModels.length > 0) {
+    modelSpinner.succeed(chalk.green(`Berhasil menemukan ${fetchedModels.length} model aktif dari router!`));
+    modelChoices = [
+      ...fetchedModels.map(m => ({ name: `🤖 ${m}`, value: m })),
+      { name: chalk.yellow('✏️  [Ketik nama model kustom secara manual...]'), value: CUSTOM_MODEL_KEY }
+    ];
+  } else {
+    modelSpinner.info(
+      chalk.gray('Router tidak mengekspos /v1/models atau offline. Menampilkan daftar model AI populer:')
+    );
+    modelChoices = [
+      ...POPULAR_MODEL_PRESETS.map(m => ({ name: `🤖 ${m}`, value: m })),
+      { name: chalk.yellow('✏️  [Ketik nama model kustom secara manual...]'), value: CUSTOM_MODEL_KEY }
+    ];
+  }
+
+  // Step 3: Select model and parameters
+  const testAnswers = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'selectedModel',
+      message: 'Pilih Target AI Model yang ingin diuji:',
+      choices: modelChoices,
+      default: defaults.model && modelChoices.some(c => c.value === defaults.model)
+        ? defaults.model
+        : modelChoices[0].value,
+      pageSize: 15
     },
     {
       type: 'input',
-      name: 'model',
-      message: 'Target AI Model:',
-      default: defaults.model || 'claude-3-5-sonnet'
+      name: 'customModel',
+      message: 'Masukkan nama model AI:',
+      when: (ans: any) => ans.selectedModel === CUSTOM_MODEL_KEY,
+      validate: (input: string) => input.trim().length > 0 || 'Model tidak boleh kosong'
     },
     {
       type: 'list',
       name: 'mode',
-      message: 'Testing Mode:',
+      message: 'Mode Pengujian Beban:',
       choices: [
         {
-          name: 'RPM Mode (Token-efficient: 1 word prompt, 5 max_tokens to test request limit)',
+          name: 'RPM Mode (Hemat token: 1 prompt ping, max 5 token - fokus menabrak batas limit panggilan/menit)',
           value: 'rpm'
         },
         {
-          name: 'TPM Mode (Token-intensive: Large context payload to test token quota)',
+          name: 'TPM Mode (Beban token tinggi: payload konteks panjang - fokus menabrak batas token/menit)',
           value: 'tpm'
         }
       ],
@@ -72,42 +119,46 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
     {
       type: 'number',
       name: 'burstTotal',
-      message: 'Total Burst Requests:',
+      message: 'Total Burst Request (jumlah panggilan):',
       default: defaults.burstTotal || 20,
-      validate: (val: number) => val > 0 || 'Must be greater than 0'
+      validate: (val: number) => val > 0 || 'Harus lebih dari 0'
     },
     {
       type: 'number',
       name: 'concurrency',
-      message: 'Concurrent Workers (Parallelism):',
+      message: 'Konkurensi Paralel (jumlah worker bersamaan):',
       default: defaults.concurrency || 5,
-      validate: (val: number) => val > 0 || 'Must be greater than 0'
+      validate: (val: number) => val > 0 || 'Harus lebih dari 0'
     },
     {
       type: 'confirm',
       name: 'saveReport',
-      message: 'Save detailed JSON report to file?',
+      message: 'Simpan laporan benchmark ke file JSON?',
       default: true
     },
     {
       type: 'input',
       name: 'exportPath',
-      message: 'Report export path:',
+      message: 'Lokasi simpan file JSON:',
       default: 'reports/benchmark-result.json',
       when: (ans: any) => ans.saveReport
     }
   ]);
 
+  const targetModel = testAnswers.selectedModel === CUSTOM_MODEL_KEY
+    ? testAnswers.customModel
+    : testAnswers.selectedModel;
+
   return {
-    url: answers.url,
-    apiKey: answers.apiKey,
-    model: answers.model,
-    burstTotal: answers.burstTotal,
-    concurrency: answers.concurrency,
-    mode: answers.mode as BenchmarkMode,
+    url: connectionAnswers.url,
+    apiKey: connectionAnswers.apiKey,
+    model: targetModel,
+    burstTotal: testAnswers.burstTotal,
+    concurrency: testAnswers.concurrency,
+    mode: testAnswers.mode as BenchmarkMode,
     timeoutMs: defaults.timeoutMs || 30000,
     stream: defaults.stream || false,
-    exportPath: answers.exportPath
+    exportPath: testAnswers.exportPath
   };
 }
 
