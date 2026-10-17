@@ -1,11 +1,16 @@
+export const ALL_MODELS_KEY = '__ALL_MODELS__';
+export const CUSTOM_MODEL_KEY = '__CUSTOM_MODEL_INPUT__';
+
 export const POPULAR_MODEL_PRESETS = [
   'claude-3-5-sonnet',
   'claude-3-5-haiku',
+  'claude-3-opus',
   'gpt-4o',
   'gpt-4o-mini',
   'o3-mini',
   'gemini-2.0-flash',
   'gemini-1.5-pro',
+  'gemini-1.5-flash',
   'deepseek-chat',
   'deepseek-reasoner',
   'meta-llama/llama-3.3-70b-instruct',

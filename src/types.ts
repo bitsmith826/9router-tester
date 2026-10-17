@@ -10,6 +10,8 @@ export interface BenchmarkConfig {
   timeoutMs: number;
   exportPath?: string;
   stream: boolean;
+  allModels?: boolean;
+  modelList?: string[];
 }
 
 export interface TokenUsage {
@@ -67,4 +69,27 @@ export interface BenchmarkSummary {
   fallbackCount: number;
   modelDistribution: Record<string, number>;
   statusDistribution: Record<string, number>;
+}
+
+export type ModelHealthStatus = 'HEALTHY' | 'RATE_LIMITED' | 'FAILED' | 'FALLBACK';
+
+export interface ModelTestSummary {
+  model: string;
+  totalRequests: number;
+  successCount: number;
+  rateLimitCount: number;
+  errorCount: number;
+  avgLatencyMs: number;
+  status: ModelHealthStatus;
+  note?: string;
+}
+
+export interface MultiModelBenchmarkReport {
+  timestamp: string;
+  routerUrl: string;
+  totalModelsTested: number;
+  healthyModelsCount: number;
+  rateLimitedCount: number;
+  failedModelsCount: number;
+  models: ModelTestSummary[];
 }

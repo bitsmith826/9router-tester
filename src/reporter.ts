@@ -175,4 +175,82 @@ export class BenchmarkReporter {
       console.error(chalk.red(`\nFailed to save export file: ${err.message}`));
     }
   }
+
+  public static printMultiModelSummary(report: any, exportPath?: string) {
+    console.log('\n' + chalk.bold.cyan('╔═══════════════════════════════════════════════════════════╗'));
+    console.log(chalk.bold.cyan('║         ALL-MODELS ENDPOINT HEALTH & STRESS TEST          ║'));
+    console.log(chalk.bold.cyan('╚═══════════════════════════════════════════════════════════╝'));
+    console.log(chalk.gray(`Target URL           : `) + chalk.white.bold(report.routerUrl));
+    console.log(chalk.gray(`Total Models Tested  : `) + chalk.yellow.bold(report.totalModelsTested.toString()));
+    console.log('─'.repeat(60) + '\n');
+
+    const table = new Table({
+      head: [
+        chalk.cyan('Model Name'),
+        chalk.cyan('Status'),
+        chalk.cyan('Pass Rate'),
+        chalk.cyan('Avg Latency'),
+        chalk.cyan('Notes / Fallback')
+      ],
+      style: { head: [], border: ['gray'] }
+    });
+
+    for (const m of report.models) {
+      let statusBadge = '';
+      if (m.status === 'HEALTHY') {
+        statusBadge = chalk.green.bold('✔ ACTIVE (200)');
+      } else if (m.status === 'FALLBACK') {
+        statusBadge = chalk.yellow.bold('⚡ FALLBACK (200)');
+      } else if (m.status === 'RATE_LIMITED') {
+        statusBadge = chalk.red.bold('🚨 RATE LIMIT (429)');
+      } else {
+        statusBadge = chalk.red('✖ FAILED');
+      }
+
+      const passRate = `${m.successCount}/${m.totalRequests} (${Math.round((m.successCount / m.totalRequests) * 100)}%)`;
+      const passRateColor = m.successCount === m.totalRequests
+        ? chalk.green(passRate)
+        : m.successCount > 0
+          ? chalk.yellow(passRate)
+          : chalk.red(passRate);
+
+      table.push([
+        chalk.white.bold(m.model),
+        statusBadge,
+        passRateColor,
+        m.avgLatencyMs > 0 ? `${m.avgLatencyMs}ms` : chalk.gray('-'),
+        m.note ? chalk.gray(m.note) : chalk.gray('None')
+      ]);
+    }
+
+    console.log(table.toString());
+
+    console.log('\n' + chalk.bold.white('📊 ALL-MODELS TEST SUMMARY:'));
+    console.log(chalk.green(`  ✔ Active & Working Models : ${report.healthyModelsCount} / ${report.totalModelsTested}`));
+    if (report.rateLimitedCount > 0) {
+      console.log(chalk.yellow(`  🚨 Rate-Limited Models    : ${report.rateLimitedCount}`));
+    }
+    if (report.failedModelsCount > 0) {
+      console.log(chalk.red(`  ✖ Failed / Dead Models    : ${report.failedModelsCount}`));
+    }
+
+    if (exportPath) {
+      this.exportMultiModelToJson(exportPath, report);
+    }
+  }
+
+  public static exportMultiModelToJson(exportPath: string, report: any) {
+    try {
+      const fullPath = path.resolve(exportPath);
+      const dir = path.dirname(fullPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+
+      fs.writeFileSync(fullPath, JSON.stringify(report, null, 2), 'utf-8');
+      console.log('\n' + chalk.green(`✓ All-models report saved to: ${chalk.bold(fullPath)}`));
+    } catch (err: any) {
+      console.error(chalk.red(`\nFailed to save export file: ${err.message}`));
+    }
+  }
 }

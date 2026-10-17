@@ -121,6 +121,49 @@ server.listen(PORT, async () => {
     console.log(`✓ 429 Telemetry (Retry-After): ${summary.rateLimitInfo?.retryAfter} (Pass: ${hasTelemetry})`);
     console.log(`✓ Smart Fallback Detected: ${summary.fallbackCount} (Pass: ${hasFallback})`);
 
+    // Test Multi-Model Report
+    const mockMultiReport = {
+      timestamp: new Date().toISOString(),
+      routerUrl: `http://127.0.0.1:${PORT}/v1`,
+      totalModelsTested: 3,
+      healthyModelsCount: 2,
+      rateLimitedCount: 1,
+      failedModelsCount: 0,
+      models: [
+        {
+          model: 'claude-3-5-sonnet',
+          totalRequests: 3,
+          successCount: 3,
+          rateLimitCount: 0,
+          errorCount: 0,
+          avgLatencyMs: 32,
+          status: 'HEALTHY' as const,
+          note: 'All OK'
+        },
+        {
+          model: 'deepseek-chat',
+          totalRequests: 3,
+          successCount: 3,
+          rateLimitCount: 0,
+          errorCount: 0,
+          avgLatencyMs: 25,
+          status: 'FALLBACK' as const,
+          note: 'Fallback triggered'
+        },
+        {
+          model: 'gpt-4o',
+          totalRequests: 3,
+          successCount: 1,
+          rateLimitCount: 2,
+          errorCount: 0,
+          avgLatencyMs: 40,
+          status: 'RATE_LIMITED' as const,
+          note: 'Rate limit 429'
+        }
+      ]
+    };
+    BenchmarkReporter.printMultiModelSummary(mockMultiReport, 'reports/mock-multimodel-report.json');
+
     if (has200 && has429 && hasFallback && hasModels && hasTelemetry) {
       console.log('\n🎉 ALL MOCK VERIFICATION TESTS PASSED SUCCESSFULLY!\n');
     } else {
