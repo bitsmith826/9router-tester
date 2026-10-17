@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import fs from 'fs';
+import path from 'path';
 import { Command } from 'commander';
 import dotenv from 'dotenv';
 import inquirer from 'inquirer';
@@ -28,6 +30,26 @@ import { formatModelLabel, classifyModel } from './classifier.js';
 
 dotenv.config();
 
+const CONFIG_CACHE_PATH = path.join(process.cwd(), '.9router-config.json');
+
+function loadLocalConfig(): { url?: string; apiKey?: string } {
+  try {
+    if (fs.existsSync(CONFIG_CACHE_PATH)) {
+      const data = fs.readFileSync(CONFIG_CACHE_PATH, 'utf-8');
+      return JSON.parse(data);
+    }
+  } catch (_) {}
+  return {};
+}
+
+function saveLocalConfig(config: { url?: string; apiKey?: string }) {
+  try {
+    const existing = loadLocalConfig();
+    const updated = { ...existing, ...config };
+    fs.writeFileSync(CONFIG_CACHE_PATH, JSON.stringify(updated, null, 2), 'utf-8');
+  } catch (_) {}
+}
+
 const program = new Command();
 
 program
@@ -52,6 +74,10 @@ program
   .option('-i, --interactive', 'Launch interactive setup wizard', false);
 
 async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Promise<BenchmarkConfig> {
+  const localConfig = loadLocalConfig();
+  const defaultUrl = defaults.url || localConfig.url || process.env.ROUTER_URL || 'http://localhost:20128/v1';
+  const defaultKey = defaults.apiKey || localConfig.apiKey || process.env.API_KEY || '9router';
+
   console.log('\n' + chalk.cyan.bold('╔═══════════════════════════════════════════════════════════╗'));
   console.log(chalk.cyan.bold('║                 9ROUTER COMPANION CLI                     ║'));
   console.log(chalk.cyan.bold('║     Health Doctor • Combo Architect • Stress Tester       ║'));
@@ -63,16 +89,21 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
       type: 'input',
       name: 'url',
       message: 'Base URL (Endpoint 9Router):',
-      default: defaults.url || 'http://localhost:20128/v1',
+      default: defaultUrl,
       validate: (input: string) => input.trim().length > 0 || 'Base URL tidak boleh kosong'
     },
     {
       type: 'input',
       name: 'apiKey',
-      message: 'API Key (default: 9router):',
-      default: defaults.apiKey || '9router'
+      message: "API Key (Default Key di 9Router, format sk-...):",
+      default: defaultKey
     }
   ]);
+
+  saveLocalConfig({
+    url: connectionAnswers.url,
+    apiKey: connectionAnswers.apiKey
+  });
 
   // Step 2: Fetch model list dynamically from the router
   const modelSpinner = ora({
@@ -82,6 +113,7 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
 
   const fetchedModels = await fetchRouterModels(connectionAnswers.url, connectionAnswers.apiKey);
   const availableModelList = fetchedModels.length > 0 ? fetchedModels : POPULAR_MODEL_PRESETS;
+  
   
   let modelChoices: Array<{ name: string; value: string }>;
 
@@ -440,15 +472,21 @@ async function runSingleModelBenchmark(config: BenchmarkConfig) {
 async function main() {
   program.parse(process.argv);
   const opts = program.opts();
+  const localConfig = loadLocalConfig();
 
   const isExplicitFlagProvided = process.argv.length > 2 && !opts.interactive;
+  const hasExplicitKey = process.argv.includes('-k') || process.argv.includes('--key');
+  const hasExplicitUrl = process.argv.includes('-u') || process.argv.includes('--url');
+
+  const resolvedUrl = hasExplicitUrl ? opts.url : (localConfig.url || opts.url);
+  const resolvedKey = hasExplicitKey ? opts.key : (localConfig.apiKey || opts.key);
 
   let config: BenchmarkConfig;
 
   if (opts.interactive || !isExplicitFlagProvided) {
     config = await promptInteractiveWizard({
-      url: opts.url,
-      apiKey: opts.key,
+      url: resolvedUrl,
+      apiKey: resolvedKey,
       model: opts.model,
       burstTotal: parseInt(opts.burst, 10),
       concurrency: parseInt(opts.concurrency, 10),
@@ -469,13 +507,13 @@ async function main() {
 
     let modelList: string[] | undefined;
     if (isAll) {
-      const fetched = await fetchRouterModels(opts.url, opts.key);
+      const fetched = await fetchRouterModels(resolvedUrl, resolvedKey);
       modelList = fetched.length > 0 ? fetched : POPULAR_MODEL_PRESETS;
     }
 
     config = {
-      url: opts.url,
-      apiKey: opts.key,
+      url: resolvedUrl,
+      apiKey: resolvedKey,
       model: opts.model,
       burstTotal: isQuickScan ? 1 : parseInt(opts.burst, 10),
       concurrency: isQuickScan ? 4 : parseInt(opts.concurrency, 10),

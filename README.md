@@ -39,8 +39,8 @@ npm start
 ║     Health Doctor • Combo Architect • Stress Tester       ║
 ╚═══════════════════════════════════════════════════════════╝
 
-? Base URL: http://localhost:20128/v1                  <-- [Tekan Enter (Base URL lokal 9Router)]
-? API Key (default: 9router): 9router                  <-- [Tekan Enter (API Key bawaan 9Router)]
+? Base URL (Endpoint 9Router): http://localhost:20128/v1                  <-- [Tekan Enter]
+? API Key (Default Key di 9Router, format sk-...): sk-a5e...              <-- [Paste Default Key 9Router Anda]
 ✔ Berhasil menemukan 12 model aktif dari 9Router!
 
 ? Pilih Target AI Model yang ingin diuji:
@@ -51,6 +51,8 @@ npm start
     🤖 deepseek-chat
     ✏️  [Ketik nama model kustom secara manual...]
 ```
+
+> 💡 **Tip:** Base URL dan Default Key yang Anda masukkan akan **otomatis diingat secara lokal**, jadi saat menjalankan pengujian berikutnya (`npm start`, `--doctor`, `--combos`), Anda tidak perlu copy-paste ulang!
 
 ---
 

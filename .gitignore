@@ -6,9 +6,10 @@ package-lock.json
 dist/
 *.tsbuildinfo
 
-# Environment variables
+# Environment & Config cache
 .env
 .env.local
+.9router-config.json
 
 # Reports & logs
 reports/
