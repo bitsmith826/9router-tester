@@ -62,14 +62,14 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
     {
       type: 'input',
       name: 'url',
-      message: 'AI Router Endpoint URL:',
+      message: 'Base URL (Endpoint 9Router):',
       default: defaults.url || 'http://localhost:20128/v1',
-      validate: (input: string) => input.trim().length > 0 || 'URL cannot be empty'
+      validate: (input: string) => input.trim().length > 0 || 'Base URL tidak boleh kosong'
     },
     {
       type: 'input',
       name: 'apiKey',
-      message: 'API Key (tekan Enter jika 9Router lokal tanpa password):',
+      message: 'API Key (default: 9router):',
       default: defaults.apiKey || '9router'
     }
   ]);

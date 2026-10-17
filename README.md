@@ -39,8 +39,8 @@ npm start
 ║     Health Doctor • Combo Architect • Stress Tester       ║
 ╚═══════════════════════════════════════════════════════════╝
 
-? AI Router Endpoint URL: http://localhost:20128/v1                  <-- [Tekan Enter (URL bawaan 9Router)]
-? API Key (tekan Enter jika 9Router lokal tanpa password): 9router    <-- [Tekan Enter (9Router lokal tidak butuh key)]
+? Base URL: http://localhost:20128/v1                  <-- [Tekan Enter (Base URL lokal 9Router)]
+? API Key (default: 9router): 9router                  <-- [Tekan Enter (API Key bawaan 9Router)]
 ✔ Berhasil menemukan 12 model aktif dari 9Router!
 
 ? Pilih Target AI Model yang ingin diuji:
@@ -199,10 +199,10 @@ Concurrency  : 5 concurrent workers
 
 ## ❓ FAQ & Pertanyaan Umum
 
-### 1. Apakah 9Router di Laptop Memerlukan API Key?
-- **TIDAK PERLU.** Secara default, 9Router yang berjalan di laptop lokal (`localhost:20128`) tidak mengunci akses dengan password.
-- Anda cukup menekan **Enter** pada pertanyaan API Key (otomatis menggunakan nilai default `9router` atau dikosongkan). Keduanya akan tembus dan berhasil mengambil model.
-- **Kapan API Key dibutuhkan?** Hanya jika 9Router Anda dipasang di server/VPS publik atau jika Anda mengaktifkan password pengaman di menu pengaturan 9Router.
+### 1. Apa Itu Base URL dan API Key 9Router?
+- **Base URL:** Alamat endpoint 9Router Anda. Jika dijalankan di laptop lokal, nilai standarnya adalah `http://localhost:20128/v1`.
+- **API Key:** Sama persis seperti konfigurasi di Cursor / Cline, 9Router menggunakan default API Key `9router`. Anda cukup menekan **Enter** saat wizard menanyakan API Key.
+- Jika Anda memasang custom API Key di 9Router (misal saat dideploy di VPS publik), baru masukkan API Key yang Anda tentukan tersebut.
 
 ### 2. File `.env` Buat Apa? Apakah Wajib?
 - **TIDAK WAJIB.** Tool ini langsung jalan 100% tanpa perlu membuat file `.env`.
