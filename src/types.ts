@@ -101,4 +101,31 @@ export interface MultiModelBenchmarkReport {
   activeModelsList: string[];
   deadModelsList: DeadModelInfo[];
   models: ModelTestSummary[];
+  recommendedCombos?: RecommendedCombo[];
+}
+
+export type ModelCategory = 'coding' | 'speed' | 'reasoning' | 'budget' | 'general';
+
+export interface ClassifiedModel {
+  model: string;
+  category: ModelCategory;
+  categoryName: string;
+  icon: string;
+  avgLatencyMs?: number;
+}
+
+export interface ComboTier {
+  tier: number;
+  tierName: string;
+  model: string;
+  avgLatencyMs?: number;
+}
+
+export interface RecommendedCombo {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  modelChain: string[];
+  tiers: ComboTier[];
 }

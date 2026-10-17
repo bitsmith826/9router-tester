@@ -3,6 +3,7 @@ import { StressTestEngine } from './engine.js';
 import { analyzeResults } from './analyzer.js';
 import { BenchmarkReporter } from './reporter.js';
 import { BenchmarkConfig } from './types.js';
+import { classifyModel, buildRecommendedCombos } from './classifier.js';
 
 // Starts a mock 9Router server that returns:
 // - 200 OK for first 3 requests
@@ -121,16 +122,24 @@ server.listen(PORT, async () => {
     console.log(`✓ 429 Telemetry (Retry-After): ${summary.rateLimitInfo?.retryAfter} (Pass: ${hasTelemetry})`);
     console.log(`✓ Smart Fallback Detected: ${summary.fallbackCount} (Pass: ${hasFallback})`);
 
-    // Test Multi-Model Report
+    // Verify Classifier
+    const isCoding = classifyModel('claude-3-5-sonnet').category === 'coding';
+    const isReasoning = classifyModel('deepseek-reasoner').category === 'reasoning';
+    const isSpeed = classifyModel('gemini-2.0-flash').category === 'speed';
+    const isBudget = classifyModel('meta-llama/llama-3.3-70b-instruct').category === 'budget';
+    const hasClassifier = isCoding && isReasoning && isSpeed && isBudget;
+    console.log(`✓ Smart Model Classifier (Coding/Reasoning/Speed/Budget): (Pass: ${hasClassifier})`);
+
+    // Test Multi-Model Report & Combo Generation
     const mockMultiReport = {
       timestamp: new Date().toISOString(),
       routerUrl: `http://127.0.0.1:${PORT}/v1`,
       scanMode: 'quick-scan' as const,
-      totalModelsTested: 4,
-      healthyModelsCount: 2,
+      totalModelsTested: 6,
+      healthyModelsCount: 4,
       rateLimitedCount: 1,
       failedModelsCount: 1,
-      activeModelsList: ['claude-3-5-sonnet', 'deepseek-chat'],
+      activeModelsList: ['claude-3-5-sonnet', 'deepseek-chat', 'gemini-2.0-flash', 'deepseek-reasoner'],
       deadModelsList: [{ model: 'mistral-large', error: 'HTTP 401: Invalid Key / Dead' }],
       models: [
         {
@@ -152,6 +161,26 @@ server.listen(PORT, async () => {
           avgLatencyMs: 25,
           status: 'FALLBACK' as const,
           note: 'Fallback triggered'
+        },
+        {
+          model: 'gemini-2.0-flash',
+          totalRequests: 1,
+          successCount: 1,
+          rateLimitCount: 0,
+          errorCount: 0,
+          avgLatencyMs: 14,
+          status: 'HEALTHY' as const,
+          note: 'All OK'
+        },
+        {
+          model: 'deepseek-reasoner',
+          totalRequests: 1,
+          successCount: 1,
+          rateLimitCount: 0,
+          errorCount: 0,
+          avgLatencyMs: 45,
+          status: 'HEALTHY' as const,
+          note: 'All OK'
         },
         {
           model: 'gpt-4o',
@@ -177,7 +206,21 @@ server.listen(PORT, async () => {
     };
     BenchmarkReporter.printMultiModelSummary(mockMultiReport, 'reports/mock-multimodel-report.json');
 
-    if (has200 && has429 && hasFallback && hasModels && hasTelemetry) {
+    const recommendedCombos = buildRecommendedCombos([
+      { model: 'claude-3-5-sonnet', avgLatencyMs: 32 },
+      { model: 'deepseek-chat', avgLatencyMs: 25 },
+      { model: 'gemini-2.0-flash', avgLatencyMs: 14 },
+      { model: 'deepseek-reasoner', avgLatencyMs: 45 }
+    ]);
+
+    const hasCombos = recommendedCombos.length === 4 &&
+      recommendedCombos.some(c => c.id === 'coding-pro') &&
+      recommendedCombos.some(c => c.id === 'speed-autocomplete') &&
+      recommendedCombos.some(c => c.id === 'deep-reasoning') &&
+      recommendedCombos.some(c => c.id === 'budget-saver');
+    console.log(`✓ 9Router Recommended Combos (4 Archetypes Generated): (Pass: ${hasCombos})`);
+
+    if (has200 && has429 && hasFallback && hasModels && hasTelemetry && hasClassifier && hasCombos) {
       console.log('\n🎉 ALL MOCK VERIFICATION TESTS PASSED SUCCESSFULLY!\n');
     } else {
       console.error('\n❌ SOME VERIFICATION CHECKS FAILED!\n');

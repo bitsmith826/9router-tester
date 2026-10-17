@@ -2,7 +2,8 @@ import chalk from 'chalk';
 import Table from 'cli-table3';
 import fs from 'fs';
 import path from 'path';
-import { BenchmarkSummary, RequestResult } from './types.js';
+import { BenchmarkSummary, RecommendedCombo, RequestResult } from './types.js';
+import { buildRecommendedCombos } from './classifier.js';
 
 export class BenchmarkReporter {
   public static printHeader(summaryConfig: any) {
@@ -247,6 +248,19 @@ export class BenchmarkReporter {
       }
     }
 
+    // Recommended 9Router Combos
+    const activeWithLatency = report.models
+      ? report.models
+          .filter((m: any) => m.status === 'HEALTHY' || m.status === 'FALLBACK')
+          .map((m: any) => ({ model: m.model, avgLatencyMs: m.avgLatencyMs }))
+      : (report.activeModelsList || []).map((mod: string) => ({ model: mod, avgLatencyMs: 0 }));
+
+    if (activeWithLatency.length > 0) {
+      const combos = report.recommendedCombos || buildRecommendedCombos(activeWithLatency);
+      report.recommendedCombos = combos;
+      this.printRecommendedCombos(combos);
+    }
+
     // Dead / Failed models alert
     if (report.deadModelsList && report.deadModelsList.length > 0) {
       console.log('\n' + chalk.bold.red('╔═══════════════════════════════════════════════════════════╗'));
@@ -260,6 +274,27 @@ export class BenchmarkReporter {
 
     if (exportPath) {
       this.exportMultiModelToJson(exportPath, report);
+    }
+  }
+
+  public static printRecommendedCombos(combos: RecommendedCombo[]) {
+    if (!combos || combos.length === 0) return;
+
+    console.log('\n' + chalk.bold.cyan('╔═══════════════════════════════════════════════════════════╗'));
+    console.log(chalk.bold.cyan('║  💡 REKOMENDASI 9ROUTER COMBO (Siap Copy-Paste ke Form)   ║'));
+    console.log(chalk.bold.cyan('╚═══════════════════════════════════════════════════════════╝'));
+    console.log(chalk.gray('  Rekomendasi rantai fallback 3-tier otomatis dari model aktif:\n'));
+
+    for (const combo of combos) {
+      console.log(`  ${combo.icon} ${chalk.bold.yellow(`[COMBO: ${combo.id}]`)} ${chalk.gray(`- ${combo.description}`)}`);
+      console.log(`  ${chalk.gray('Nama Combo  :')} ${chalk.white.bold(combo.id)}`);
+      console.log(`  ${chalk.gray('Model Chain :')} ${chalk.cyan.bold(combo.modelChain.join(', '))}`);
+      console.log(`  ${chalk.gray('Urutan Tier :')}`);
+      for (const t of combo.tiers) {
+        const lat = t.avgLatencyMs && t.avgLatencyMs > 0 ? chalk.gray(`(${t.avgLatencyMs}ms)`) : '';
+        console.log(`    ${chalk.gray('•')} ${chalk.white(t.tierName.padEnd(20))}: ${chalk.green(t.model)} ${lat}`);
+      }
+      console.log('');
     }
   }
 

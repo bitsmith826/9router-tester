@@ -18,10 +18,13 @@ import { BenchmarkReporter } from './reporter.js';
 import {
   fetchRouterModels,
   POPULAR_MODEL_PRESETS,
+  RECOMMEND_COMBOS_KEY,
   QUICK_SCAN_KEY,
   DEEP_STRESS_ALL_KEY,
+  FILTER_CATEGORY_KEY,
   CUSTOM_MODEL_KEY
 } from './models.js';
+import { formatModelLabel, classifyModel } from './classifier.js';
 
 dotenv.config();
 
@@ -30,11 +33,12 @@ const program = new Command();
 program
   .name('9router-stress-test')
   .description('High-performance CLI stress-testing, health scanner, and rate-limit benchmarking tool for 9Router and Universal AI Gateways.')
-  .version('1.2.0')
+  .version('1.3.0')
   .option('-u, --url <url>', 'AI Router endpoint URL', process.env.ROUTER_URL || 'http://localhost:20128/v1')
   .option('-k, --key <key>', 'AI Router API Key', process.env.API_KEY || '9router')
   .option('-m, --model <model>', 'Target model to test', process.env.DEFAULT_MODEL || 'claude-3-5-sonnet')
   .option('-q, --quick-scan', 'Run instant Quick Health Scan (paralel 3-5s untuk cek model hidup/mati)', false)
+  .option('--combos', 'Run quick health scan and generate 9Router Recommended Combos (Coding, Speed, Reasoning, Budget)', false)
   .option('-a, --all-models', 'Deep stress test ALL discovered models with burst load', false)
   .option('-b, --burst <number>', 'Burst requests count (total or per-model)', '15')
   .option('-c, --concurrency <number>', 'Concurrent workers', '5')
@@ -78,36 +82,35 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
   
   let modelChoices: Array<{ name: string; value: string }>;
 
+  const buildActionChoices = (models: string[]) => [
+    {
+      name: chalk.cyan.bold(`💡 [RECOMMEND 9ROUTER COMBOS] Scan & Racik Paket Combo Fallback Otomatis`),
+      value: RECOMMEND_COMBOS_KEY
+    },
+    {
+      name: chalk.green.bold(`🩺 [QUICK HEALTH SCAN] Pindai Cepat Model Hidup & Mati (3-5 Detik Selesai)`),
+      value: QUICK_SCAN_KEY
+    },
+    {
+      name: chalk.yellow.bold(`💥 [DEEP STRESS TEST] Uji Limit & Throughput Semua Model (${models.length} Model)`),
+      value: DEEP_STRESS_ALL_KEY
+    },
+    ...(models.length > 5 ? [{
+      name: chalk.magenta.bold(`🔍 [FILTER KATEGORI] Cari/Saring Model (Coding / Speed / Reasoning / Budget)`),
+      value: FILTER_CATEGORY_KEY
+    }] : []),
+    ...models.map(m => ({ name: formatModelLabel(m), value: m })),
+    { name: chalk.gray('✏️  [Ketik nama model kustom secara manual...]'), value: CUSTOM_MODEL_KEY }
+  ];
+
   if (fetchedModels.length > 0) {
     modelSpinner.succeed(chalk.green(`Berhasil menemukan ${fetchedModels.length} model aktif dari router!`));
-    modelChoices = [
-      {
-        name: chalk.green.bold(`🩺 [QUICK HEALTH SCAN] Pindai Cepat Model Hidup & Mati (3-5 Detik Selesai)`),
-        value: QUICK_SCAN_KEY
-      },
-      {
-        name: chalk.yellow.bold(`💥 [DEEP STRESS TEST] Uji Limit & Throughput Semua Model (${fetchedModels.length} Model)`),
-        value: DEEP_STRESS_ALL_KEY
-      },
-      ...fetchedModels.map(m => ({ name: `🤖 ${m}`, value: m })),
-      { name: chalk.gray('✏️  [Ketik nama model kustom secara manual...]'), value: CUSTOM_MODEL_KEY }
-    ];
+    modelChoices = buildActionChoices(fetchedModels);
   } else {
     modelSpinner.info(
       chalk.gray('Router tidak mengekspos /v1/models atau offline. Menampilkan daftar model AI populer:')
     );
-    modelChoices = [
-      {
-        name: chalk.green.bold(`🩺 [QUICK HEALTH SCAN] Pindai Cepat Model Populer Hidup & Mati`),
-        value: QUICK_SCAN_KEY
-      },
-      {
-        name: chalk.yellow.bold(`💥 [DEEP STRESS TEST] Uji Limit Seluruh Model Populer`),
-        value: DEEP_STRESS_ALL_KEY
-      },
-      ...POPULAR_MODEL_PRESETS.map(m => ({ name: `🤖 ${m}`, value: m })),
-      { name: chalk.gray('✏️  [Ketik nama model kustom secara manual...]'), value: CUSTOM_MODEL_KEY }
-    ];
+    modelChoices = buildActionChoices(POPULAR_MODEL_PRESETS);
   }
 
   // Step 3: Select Action or Model
@@ -115,7 +118,7 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
     {
       type: 'list',
       name: 'selectedOption',
-      message: 'Pilih Aksi Pengujian:',
+      message: 'Pilih Aksi Pengujian / Model Target:',
       choices: modelChoices,
       default: defaults.scanMode === 'quick-scan'
         ? QUICK_SCAN_KEY
@@ -125,6 +128,29 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
             ? defaults.model
             : modelChoices[0].value,
       pageSize: 15
+    },
+    {
+      type: 'list',
+      name: 'categoryFilter',
+      message: 'Pilih Kategori Model:',
+      when: (ans: any) => ans.selectedOption === FILTER_CATEGORY_KEY,
+      choices: [
+        { name: '💻 Coding Pro (Sonnet, GPT-4o, DeepSeek-V3, Qwen Coder)', value: 'coding' },
+        { name: '⚡ Speed & Autocomplete (Gemini Flash, Haiku, 4o-mini)', value: 'speed' },
+        { name: '🧠 Deep Reasoning (DeepSeek-R1, o1, o3-mini)', value: 'reasoning' },
+        { name: '💰 Budget Saver (DeepSeek, Flash, Mini, Llama, Qwen)', value: 'budget' }
+      ]
+    },
+    {
+      type: 'list',
+      name: 'filteredModel',
+      message: 'Pilih Model dari Kategori Terpilih:',
+      when: (ans: any) => ans.selectedOption === FILTER_CATEGORY_KEY,
+      choices: (ans: any) => {
+        const filtered = availableModelList.filter(m => classifyModel(m).category === ans.categoryFilter);
+        const listToDisplay = filtered.length > 0 ? filtered : availableModelList;
+        return listToDisplay.map(m => ({ name: formatModelLabel(m), value: m }));
+      }
     },
     {
       type: 'input',
@@ -148,7 +174,7 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
         }
       ],
       default: defaults.mode || 'rpm',
-      when: (ans: any) => ans.selectedOption !== QUICK_SCAN_KEY
+      when: (ans: any) => ans.selectedOption !== QUICK_SCAN_KEY && ans.selectedOption !== RECOMMEND_COMBOS_KEY
     },
     {
       type: 'number',
@@ -158,7 +184,7 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
         : 'Total Burst Request (jumlah panggilan):',
       default: (ans: any) => ans.selectedOption === DEEP_STRESS_ALL_KEY ? 3 : (defaults.burstTotal || 20),
       validate: (val: number) => val > 0 || 'Harus lebih dari 0',
-      when: (ans: any) => ans.selectedOption !== QUICK_SCAN_KEY
+      when: (ans: any) => ans.selectedOption !== QUICK_SCAN_KEY && ans.selectedOption !== RECOMMEND_COMBOS_KEY
     },
     {
       type: 'number',
@@ -166,7 +192,7 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
       message: 'Konkurensi Paralel (jumlah worker bersamaan):',
       default: defaults.concurrency || 5,
       validate: (val: number) => val > 0 || 'Harus lebih dari 0',
-      when: (ans: any) => ans.selectedOption !== QUICK_SCAN_KEY
+      when: (ans: any) => ans.selectedOption !== QUICK_SCAN_KEY && ans.selectedOption !== RECOMMEND_COMBOS_KEY
     },
     {
       type: 'confirm',
@@ -179,6 +205,7 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
       name: 'exportPath',
       message: 'Lokasi simpan file JSON:',
       default: (ans: any) => {
+        if (ans.selectedOption === RECOMMEND_COMBOS_KEY) return 'reports/recommended-combos.json';
         if (ans.selectedOption === QUICK_SCAN_KEY) return 'reports/health-scan-report.json';
         if (ans.selectedOption === DEEP_STRESS_ALL_KEY) return 'reports/all-models-report.json';
         return 'reports/benchmark-result.json';
@@ -187,15 +214,18 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
     }
   ]);
 
-  const isQuickScan = testAnswers.selectedOption === QUICK_SCAN_KEY;
+  const isRecommendCombos = testAnswers.selectedOption === RECOMMEND_COMBOS_KEY;
+  const isQuickScan = testAnswers.selectedOption === QUICK_SCAN_KEY || isRecommendCombos;
   const isDeepStressAll = testAnswers.selectedOption === DEEP_STRESS_ALL_KEY;
   const isAll = isQuickScan || isDeepStressAll;
 
   const targetModel = isAll
     ? availableModelList[0]
-    : testAnswers.selectedOption === CUSTOM_MODEL_KEY
-      ? testAnswers.customModel
-      : testAnswers.selectedOption;
+    : testAnswers.selectedOption === FILTER_CATEGORY_KEY
+      ? testAnswers.filteredModel
+      : testAnswers.selectedOption === CUSTOM_MODEL_KEY
+        ? testAnswers.customModel
+        : testAnswers.selectedOption;
 
   return {
     url: connectionAnswers.url,
@@ -414,11 +444,11 @@ async function main() {
       timeoutMs: parseInt(opts.timeout, 10),
       stream: Boolean(opts.stream),
       exportPath: opts.export,
-      allModels: Boolean(opts.allModels || opts.quickScan),
-      scanMode: opts.quickScan ? 'quick-scan' : opts.allModels ? 'deep-stress' : undefined
+      allModels: Boolean(opts.allModels || opts.quickScan || opts.combos),
+      scanMode: (opts.quickScan || opts.combos) ? 'quick-scan' : opts.allModels ? 'deep-stress' : undefined
     });
   } else {
-    const isQuickScan = Boolean(opts.quickScan);
+    const isQuickScan = Boolean(opts.quickScan || opts.combos);
     const isAll = isQuickScan || Boolean(opts.allModels);
 
     let modelList: string[] | undefined;
@@ -436,7 +466,7 @@ async function main() {
       mode: (opts.mode.toLowerCase() === 'tpm' ? 'tpm' : 'rpm') as BenchmarkMode,
       timeoutMs: parseInt(opts.timeout, 10),
       stream: Boolean(opts.stream),
-      exportPath: opts.export,
+      exportPath: opts.export || (opts.combos ? 'reports/recommended-combos.json' : undefined),
       allModels: isAll,
       modelList,
       scanMode: isQuickScan ? 'quick-scan' : opts.allModels ? 'deep-stress' : 'single-model'

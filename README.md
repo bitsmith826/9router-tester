@@ -67,6 +67,12 @@ npm start
 
 ## 🌟 Key Features / Fitur Utama
 
+- 💡 **9Router Smart Combo Doctor & Recommender:** Mengatasi kebingungan saat membuat **Model Combo** di 9Router karena terlalu banyak pilihan model. Fitur ini otomatis:
+  - Mengklasifikasikan model ke dalam 4 spesialisasi: 💻 *Coding Pro*, ⚡ *Speed & Autocomplete*, 🧠 *Deep Reasoning*, 💰 *Budget Saver*.
+  - Menguji model aktif dan menyusun rantai fallback 3-tier (`Tier 1 Primary` $\rightarrow$ `Tier 2 Fallback` $\rightarrow$ `Tier 3 Emergency`).
+  - Menyediakan **blok teks copy-paste instan** (Nama Combo dan urutan model) yang bisa langsung disalin ke formulir pembuatan Combo 9Router!
+  - Menyediakan menu filter kategori interaktif di CLI agar Anda bisa menyaring model dengan mudah.
+- 🩺 **Quick Health Scan (3-5 Detik Selesai):** Pindai paralel status hidup/mati seluruh model di 9Router dengan 1 kali probe cepat. Otomatis menghasilkan daftar model aktif siap pakai untuk Cursor/Cline serta peringatan model mati.
 - 🔥 **Batch Health & Stress Test (All-Models at Once):** Tidak perlu menguji model satu per satu! Cukup pilih opsi *[UJI SEMUA MODEL SEKALIGUS]* atau pasang flag `-a, --all-models`. Tool otomatis mengecek seluruh model aktif di router Anda, memberi tanda mana yang **✔ ACTIVE (200)**, mana yang **⚡ FALLBACK**, mana yang **🚨 RATE LIMITED (429)**, dan mana yang **✖ DEAD/ERROR**.
 - 🔍 **Dynamic Model Discovery (`/v1/models`):** Otomatis menghubungi endpoint router Anda untuk mengambil daftar model aktif yang tersedia dan menampilkannya sebagai pilihan di terminal. Juga menyediakan daftar preset model AI terpopuler (Claude 3.5, GPT-4o, Gemini 2.0, DeepSeek, Llama 3, Qwen) serta opsi ketik manual.
 - 🌐 **Universal Gateway Support:** Dirancang untuk bekerja dengan semua proxy OpenAI-compatible: **9Router**, **One API**, **New API**, **LiteLLM**, **OpenRouter**, **Portkey**, **Ollama**, **vLLM**, atau endpoint mandiri.
@@ -136,6 +142,8 @@ node dist/index.js --model deepseek-chat --burst 15 --mode tpm --export reports/
 | `-u, --url <url>` | `http://localhost:20128/v1` | URL endpoint 9Router (mendukung local / VPS / CF Tunnel) |
 | `-k, --key <key>` | `9router` | API Key 9Router Anda |
 | `-m, --model <model>` | `claude-3-5-sonnet` | Model AI tunggal yang ingin diuji |
+| `--combos` | `false` | **Scan cepat & racik 4 rekomendasi Combo 9Router** (Coding, Speed, Reasoning, Budget) siap copy-paste |
+| `-q, --quick-scan` | `false` | **Quick Health Scan** paralel (3-5s) untuk deteksi model hidup/mati & Cursor block |
 | `-a, --all-models` | `false` | **Uji seluruh model sekaligus** di endpoint secara berurutan |
 | `-b, --burst <n>` | `15` | Total request (atau jumlah panggilan per model jika all-models) |
 | `-c, --concurrency <n>` | `5` | Jumlah worker paralel serentak |
