@@ -235,17 +235,12 @@ export class BenchmarkReporter {
       console.log(chalk.red(`  ✖ Failed / Dead Models    : ${report.failedModelsCount}`));
     }
 
-    // Copy-pasteable list for Cursor / Cline
+    // Copy-pasteable list for Cursor / Cline (Super Minimalist)
     if (report.activeModelsList && report.activeModelsList.length > 0) {
       console.log('\n' + chalk.bold.green('╔═══════════════════════════════════════════════════════════╗'));
-      console.log(chalk.bold.green('║  📋 MODEL AKTIF SIAP PAKAI (Copy-Paste ke Cursor/Cline)   ║'));
+      console.log(chalk.bold.green('║  📋 MODEL AKTIF (Copy-Paste ke Setting Cursor / Cline)    ║'));
       console.log(chalk.bold.green('╚═══════════════════════════════════════════════════════════╝'));
-      console.log(chalk.gray('  Format Comma-Separated (untuk setting Cursor):'));
       console.log(chalk.white.bold(`  ${report.activeModelsList.join(', ')}\n`));
-      console.log(chalk.gray('  Daftar Satuan:'));
-      for (const mod of report.activeModelsList) {
-        console.log(chalk.green(`   ✔ ${mod}`));
-      }
     }
 
     // Recommended 9Router Combos
@@ -261,15 +256,15 @@ export class BenchmarkReporter {
       this.printRecommendedCombos(combos);
     }
 
-    // Dead / Failed models alert
+    // Dead / Failed models alert (Super Minimalist)
     if (report.deadModelsList && report.deadModelsList.length > 0) {
-      console.log('\n' + chalk.bold.red('╔═══════════════════════════════════════════════════════════╗'));
-      console.log(chalk.bold.red('║  ⚠️  MODEL MATI / TIDAK BISA DIPAKAI (Nonaktifkan di 9Router)║'));
+      console.log(chalk.bold.red('╔═══════════════════════════════════════════════════════════╗'));
+      console.log(chalk.bold.red('║  ⚠️  MODEL MATI (Nonaktifkan di Dashboard 9Router)        ║'));
       console.log(chalk.bold.red('╚═══════════════════════════════════════════════════════════╝'));
-      console.log(chalk.gray('  Model-model berikut gagal merespon / API key tidak valid:'));
       for (const d of report.deadModelsList) {
-        console.log(chalk.red(`   ✖ ${chalk.bold(d.model)}: ${chalk.gray(d.error)}`));
+        console.log(chalk.red(`  ✖ ${chalk.bold(d.model)}: ${chalk.gray(d.error)}`));
       }
+      console.log('');
     }
 
     if (exportPath) {
@@ -280,21 +275,13 @@ export class BenchmarkReporter {
   public static printRecommendedCombos(combos: RecommendedCombo[]) {
     if (!combos || combos.length === 0) return;
 
-    console.log('\n' + chalk.bold.cyan('╔═══════════════════════════════════════════════════════════╗'));
-    console.log(chalk.bold.cyan('║  💡 REKOMENDASI 9ROUTER COMBO (Siap Copy-Paste ke Form)   ║'));
+    console.log(chalk.bold.cyan('╔═══════════════════════════════════════════════════════════╗'));
+    console.log(chalk.bold.cyan('║  💡 REKOMENDASI 9ROUTER COMBO (Copy-Paste ke Form Combo)  ║'));
     console.log(chalk.bold.cyan('╚═══════════════════════════════════════════════════════════╝'));
-    console.log(chalk.gray('  Rekomendasi rantai fallback 3-tier otomatis dari model aktif:\n'));
 
     for (const combo of combos) {
-      console.log(`  ${combo.icon} ${chalk.bold.yellow(`[COMBO: ${combo.id}]`)} ${chalk.gray(`- ${combo.description}`)}`);
-      console.log(`  ${chalk.gray('Nama Combo  :')} ${chalk.white.bold(combo.id)}`);
-      console.log(`  ${chalk.gray('Model Chain :')} ${chalk.cyan.bold(combo.modelChain.join(', '))}`);
-      console.log(`  ${chalk.gray('Urutan Tier :')}`);
-      for (const t of combo.tiers) {
-        const lat = t.avgLatencyMs && t.avgLatencyMs > 0 ? chalk.gray(`(${t.avgLatencyMs}ms)`) : '';
-        console.log(`    ${chalk.gray('•')} ${chalk.white(t.tierName.padEnd(20))}: ${chalk.green(t.model)} ${lat}`);
-      }
-      console.log('');
+      console.log(`  ${combo.icon} ${chalk.bold.white('Combo :')} ${chalk.yellow.bold(combo.id)}`);
+      console.log(`     ${chalk.bold.white('Model :')} ${chalk.cyan.bold(combo.modelChain.join(', '))}\n`);
     }
   }
 
