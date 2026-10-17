@@ -277,17 +277,6 @@ export class BenchmarkReporter {
       this.printRecommendedCombos(combos);
     }
 
-    // Dead / Failed models alert (Super Minimalist)
-    if (report.deadModelsList && report.deadModelsList.length > 0) {
-      console.log(chalk.bold.red('╔═══════════════════════════════════════════════════════════╗'));
-      console.log(chalk.bold.red('║  ⚠️  MODEL MATI (Nonaktifkan di Dashboard 9Router)        ║'));
-      console.log(chalk.bold.red('╚═══════════════════════════════════════════════════════════╝'));
-      for (const d of report.deadModelsList) {
-        console.log(chalk.red(`  ✖ ${chalk.bold(d.model)}: ${chalk.gray(d.error)}`));
-      }
-      console.log('');
-    }
-
     if (exportPath) {
       this.exportMultiModelToJson(exportPath, report);
     }
