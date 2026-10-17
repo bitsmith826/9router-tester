@@ -1,5 +1,5 @@
-# ⚡ 9Router Stress Test & AI Model Doctor
-### *High-Performance Rate-Limit Benchmark, Health Scanner & Fallback Tester for 9Router*
+# ⚡ 9Router Companion CLI
+### *The Ultimate All-in-One CLI for 9Router: Health Doctor, Combo Architect & Rate-Limit Stress Tester*
 *(Also compatible with One API, New API, LiteLLM, OpenRouter, Ollama & vLLM)*
 
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
@@ -8,9 +8,9 @@
 [![9Router Compatible](https://img.shields.io/badge/9Router-Compatible-FF6B6B)](https://github.com/decolua/9router)
 [![OpenAI Compatible](https://img.shields.io/badge/OpenAI--API-Compatible-412991)](https://platform.openai.com/)
 
-> **High-performance CLI benchmarking, rate-limit stress-testing, and dynamic model discovery tool tailored for 9Router (also compatible with One API, New API, LiteLLM, OpenRouter, Ollama, vLLM).**
+> **All-in-One CLI companion for 9Router (also compatible with One API, New API, LiteLLM, OpenRouter, Ollama, vLLM).**
 > 
-> *Uji batas rate limit (HTTP 429 / RPM / TPM) provider AI dan validasi apakah fitur Smart Auto-Fallback 9Router Anda bekerja mulus tanpa memutus koneksi.*
+> *Deteksi model hidup/mati dalam 3 detik untuk Cursor, racik paket Combo fallback 3-tier otomatis, dan uji batas ketahanan rate-limit (RPM/TPM) provider AI Anda.*
 
 ---
 
@@ -27,7 +27,7 @@ cd 9router-stress-test
 npm install
 npm run build
 
-# 3. Jalankan pengujian interaktif
+# 3. Jalankan wizard interaktif
 npm start
 ```
 
@@ -35,8 +35,8 @@ npm start
 
 ```text
 ╔═══════════════════════════════════════════════════════════╗
-║           9ROUTER STRESS TEST & AI MODEL DOCTOR           ║
-║  (Compatible with 9Router, One API, LiteLLM, OpenRouter)  ║
+║                 9ROUTER COMPANION CLI                     ║
+║     Health Doctor • Combo Architect • Stress Tester       ║
 ╚═══════════════════════════════════════════════════════════╝
 
 ? AI Router Endpoint URL: http://localhost:20128/v1   <-- [Tekan Enter]
@@ -44,23 +44,12 @@ npm start
 ✔ Berhasil menemukan 12 model aktif dari 9Router!
 
 ? Pilih Target AI Model yang ingin diuji:
-  > 🔥 [UJI SEMUA MODEL SEKALIGUS] (12 Model - Health Check & Limit Test)  <-- [PILIHAN INI!]
+  > 💡 [RECOMMEND 9ROUTER COMBOS] Scan & Racik Paket Combo Fallback Otomatis
+    🩺 [QUICK HEALTH SCAN] Pindai Cepat Model Hidup & Mati (3-5 Detik Selesai)
+    💥 [DEEP STRESS TEST] Uji Limit & Throughput Semua Model (12 Model)
     🤖 claude-3-5-sonnet
-    🤖 claude-3-5-haiku
-    🤖 gpt-4o
     🤖 deepseek-chat
     ✏️  [Ketik nama model kustom secara manual...]
-
-? Mode Pengujian Beban:
-  > RPM Mode (Hemat token: 1 prompt ping, max 5 token - fokus menabrak limit)  <-- [Tekan Enter]
-    TPM Mode (Beban token tinggi: payload konteks panjang)
-
-? Jumlah Panggilan per Model (misal: 3 - cepat & hemat kuota): 3  <-- [Tekan Enter]
-? Konkurensi Paralel (jumlah worker bersamaan): 5                  <-- [Tekan Enter]
-? Simpan laporan benchmark ke file JSON? Yes                       <-- [Tekan Enter]
-
-✔ All-models test finished: 12 models benchmarked.
-[Tabel perbandingan kelayakan seluruh model langsung disajikan!]
 ```
 
 ---
@@ -109,28 +98,34 @@ npm run build
 
 ---
 
-## 💻 Penggunaan (Usage)
+## 💻 Panduan Penggunaan Cepat (Quick Usage)
 
-### Opsi A: Mode Wizard Interaktif (Paling Mudah)
+### 1. Wizard Interaktif (Tanya-Jawab Ramah Pemula)
 Cukup jalankan tanpa argumen:
 ```bash
 npm start
 ```
-Wizard terminal akan memandu Anda memilih URL, API Key, Model, dan jumlah request secara interaktif!
+Wizard terminal akan memandu Anda mendeteksi model, memilih mode, dan menjalankan diagnostik.
 
 ---
 
-### Opsi B: Menggunakan CLI Flags (Untuk Scripting / Cepat)
+### 2. Shorthand Flags (Perintah Cepat Sekali Ketik)
 
 ```bash
-# Uji Burst 20 request ke 9Router lokal dengan model Claude (Mode RPM hemat token)
-node dist/index.js --url http://localhost:20128/v1 --key 9router --model claude-3-5-sonnet --burst 20 --concurrency 5 --mode rpm
+# 🩺 1. Cek Model Hidup / Mati untuk Cursor (Doctor Mode - 3 Detik)
+node dist/index.js --doctor
 
-# Uji 9Router di VPS via Cloudflare Tunnel
-node dist/index.js --url https://ai.domainanda.com/v1 --key RahasiaAnda123! --model gpt-4o --burst 30 --concurrency 10
+# 💡 2. Racik 4 Rekomendasi Combo Fallback 9Router Siap Copy-Paste
+node dist/index.js --combos
 
-# Uji Mode TPM (Token berat) dan simpan laporan ke JSON
-node dist/index.js --model deepseek-chat --burst 15 --mode tpm --export reports/deepseek-tpm.json
+# 💥 3. Deep Stress Test Limit Seluruh Model Sekaligus
+node dist/index.js --stress
+
+# ⚡ 4. Ultra TPM Mode: Stress Test Beban Token Masif (misal 2.000 token/req)
+node dist/index.js --model claude-3-5-sonnet --mode tpm --max-tokens 2000 --burst 10 --concurrency 5
+
+# 🌐 5. Uji Endpoint VPS / Cloudflare Tunnel
+node dist/index.js --url https://ai.domainanda.com/v1 --key RahasiaAnda123! --doctor
 ```
 
 ---
@@ -139,13 +134,13 @@ node dist/index.js --model deepseek-chat --burst 15 --mode tpm --export reports/
 
 | Flag | Default | Deskripsi |
 |---|---|---|
-| `-u, --url <url>` | `http://localhost:20128/v1` | URL endpoint 9Router (mendukung local / VPS / CF Tunnel) |
+| `-d, --doctor` | `false` | **Health Doctor (3-5s):** Deteksi model hidup/mati & buat baris model aktif Cursor |
+| `--combos` | `false` | **Combo Architect:** Scan cepat & racik 4 rekomendasi Combo 9Router siap copy-paste |
+| `-s, --stress` | `false` | **Deep Stress Test:** Uji batas limit seluruh model endpoint secara berurutan |
+| `-u, --url <url>` | `http://localhost:20128/v1` | URL endpoint AI Router (mendukung local / VPS / CF Tunnel) |
 | `-k, --key <key>` | `9router` | API Key 9Router Anda |
 | `-m, --model <model>` | `claude-3-5-sonnet` | Model AI tunggal yang ingin diuji |
-| `--combos` | `false` | **Scan cepat & racik 4 rekomendasi Combo 9Router** (Coding, Speed, Reasoning, Budget) siap copy-paste |
-| `-q, --quick-scan` | `false` | **Quick Health Scan** paralel (3-5s) untuk deteksi model hidup/mati & Cursor block |
-| `-a, --all-models` | `false` | **Uji seluruh model sekaligus** di endpoint secara berurutan |
-| `-b, --burst <n>` | `15` | Total request (atau jumlah panggilan per model jika all-models) |
+| `-b, --burst <n>` | `15` | Total request (atau jumlah panggilan per model) |
 | `-c, --concurrency <n>` | `5` | Jumlah worker paralel serentak |
 | `--mode <rpm\|tpm>` | `rpm` | `rpm` (hemat token) atau `tpm` (token besar) |
 | `--max-tokens <n>` | `5` (RPM) / `1000` (TPM) | Jumlah token maksimum per request (misal: `2000` atau `4000` untuk konsumsi token masif) |

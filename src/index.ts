@@ -31,15 +31,17 @@ dotenv.config();
 const program = new Command();
 
 program
-  .name('9router-stress-test')
-  .description('High-performance CLI stress-testing, health scanner, and rate-limit benchmarking tool for 9Router and Universal AI Gateways.')
-  .version('1.3.0')
+  .name('9router-companion')
+  .description('All-in-One CLI companion for 9Router: Quick Health Doctor, Smart Combo Architect, and Rate-Limit (RPM/TPM) Stress Tester.')
+  .version('1.3.1')
   .option('-u, --url <url>', 'AI Router endpoint URL', process.env.ROUTER_URL || 'http://localhost:20128/v1')
   .option('-k, --key <key>', 'AI Router API Key', process.env.API_KEY || '9router')
   .option('-m, --model <model>', 'Target model to test', process.env.DEFAULT_MODEL || 'claude-3-5-sonnet')
-  .option('-q, --quick-scan', 'Run instant Quick Health Scan (paralel 3-5s untuk cek model hidup/mati)', false)
-  .option('--combos', 'Run quick health scan and generate 9Router Recommended Combos (Coding, Speed, Reasoning, Budget)', false)
-  .option('-a, --all-models', 'Deep stress test ALL discovered models with burst load', false)
+  .option('-d, --doctor', 'Run instant Health Doctor (3-5s quick scan untuk model hidup/mati & Cursor copy-paste)', false)
+  .option('-q, --quick-scan', 'Alias for --doctor', false)
+  .option('--combos', 'Run health scan and generate 9Router Recommended Combos (Coding, Speed, Reasoning, Budget)', false)
+  .option('-s, --stress', 'Run Deep Stress Test on all discovered models with burst load', false)
+  .option('-a, --all-models', 'Alias for --stress', false)
   .option('-b, --burst <number>', 'Burst requests count (total or per-model)', '15')
   .option('-c, --concurrency <number>', 'Concurrent workers', '5')
   .option('--mode <mode>', 'Test mode: rpm (minimal token) or tpm (heavy token)', 'rpm')
@@ -51,8 +53,8 @@ program
 
 async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Promise<BenchmarkConfig> {
   console.log('\n' + chalk.cyan.bold('╔═══════════════════════════════════════════════════════════╗'));
-  console.log(chalk.cyan.bold('║           9ROUTER STRESS TEST & AI MODEL DOCTOR           ║'));
-  console.log(chalk.cyan.bold('║  (Compatible with 9Router, One API, LiteLLM, OpenRouter)  ║'));
+  console.log(chalk.cyan.bold('║                 9ROUTER COMPANION CLI                     ║'));
+  console.log(chalk.cyan.bold('║     Health Doctor • Combo Architect • Stress Tester       ║'));
   console.log(chalk.cyan.bold('╚═══════════════════════════════════════════════════════════╝\n'));
 
   // Step 1: Endpoint & Auth
@@ -455,12 +457,15 @@ async function main() {
       timeoutMs: parseInt(opts.timeout, 10),
       stream: Boolean(opts.stream),
       exportPath: opts.export,
-      allModels: Boolean(opts.allModels || opts.quickScan || opts.combos),
-      scanMode: (opts.quickScan || opts.combos) ? 'quick-scan' : opts.allModels ? 'deep-stress' : undefined
+      allModels: Boolean(opts.allModels || opts.stress || opts.quickScan || opts.doctor || opts.combos),
+      scanMode: (opts.doctor || opts.quickScan || opts.combos) ? 'quick-scan' : (opts.stress || opts.allModels) ? 'deep-stress' : undefined
     });
   } else {
-    const isQuickScan = Boolean(opts.quickScan || opts.combos);
-    const isAll = isQuickScan || Boolean(opts.allModels);
+    const isDoctor = Boolean(opts.doctor || opts.quickScan);
+    const isCombos = Boolean(opts.combos);
+    const isStress = Boolean(opts.stress || opts.allModels);
+    const isQuickScan = isDoctor || isCombos;
+    const isAll = isQuickScan || isStress;
 
     let modelList: string[] | undefined;
     if (isAll) {
@@ -478,10 +483,10 @@ async function main() {
       maxTokens: opts.maxTokens ? parseInt(opts.maxTokens, 10) : undefined,
       timeoutMs: parseInt(opts.timeout, 10),
       stream: Boolean(opts.stream),
-      exportPath: opts.export || (opts.combos ? 'reports/recommended-combos.json' : undefined),
+      exportPath: opts.export || (isCombos ? 'reports/recommended-combos.json' : undefined),
       allModels: isAll,
       modelList,
-      scanMode: isQuickScan ? 'quick-scan' : opts.allModels ? 'deep-stress' : 'single-model'
+      scanMode: isQuickScan ? 'quick-scan' : isStress ? 'deep-stress' : 'single-model'
     };
   }
 

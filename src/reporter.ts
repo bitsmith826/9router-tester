@@ -8,8 +8,8 @@ import { buildRecommendedCombos } from './classifier.js';
 export class BenchmarkReporter {
   public static printHeader(summaryConfig: any) {
     console.log('\n' + chalk.bold.cyan('╔═══════════════════════════════════════════════════════════╗'));
-    console.log(chalk.bold.cyan('║           9ROUTER STRESS TEST & AI MODEL DOCTOR           ║'));
-    console.log(chalk.bold.cyan('║  (Compatible with 9Router, One API, LiteLLM, OpenRouter)  ║'));
+    console.log(chalk.bold.cyan('║                 9ROUTER COMPANION CLI                     ║'));
+    console.log(chalk.bold.cyan('║     Health Doctor • Combo Architect • Stress Tester       ║'));
     console.log(chalk.bold.cyan('╚═══════════════════════════════════════════════════════════╝'));
     console.log(chalk.gray(`Target URL   : `) + chalk.white.bold(summaryConfig.url));
     console.log(chalk.gray(`Target Model : `) + chalk.yellow.bold(summaryConfig.model));

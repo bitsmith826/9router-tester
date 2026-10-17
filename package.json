@@ -1,22 +1,24 @@
 {
   "name": "9router-stress-test",
-  "version": "1.3.0",
-  "description": "High-performance CLI stress-testing, rate-limit benchmarking, and AI model health doctor for 9Router and universal AI gateways.",
+  "version": "1.3.1",
+  "description": "All-in-One CLI companion for 9Router: Quick Health Doctor, Smart Combo Architect, and Rate-Limit (RPM/TPM) Stress Tester.",
   "keywords": [
-    "ai-router",
     "9router",
+    "9router-companion",
+    "ai-router",
+    "model-doctor",
+    "combo-architect",
+    "cursor",
+    "cline",
+    "stress-test",
+    "rate-limit",
+    "benchmark",
+    "tpm",
+    "rpm",
     "one-api",
     "new-api",
     "litellm",
-    "openrouter",
-    "ai-proxy",
-    "stress-test",
-    "load-test",
-    "rate-limit",
-    "benchmark",
-    "llm",
-    "openai-compatible",
-    "fallback-detection"
+    "openrouter"
   ],
   "author": "bitsmith826",
   "repository": {
@@ -28,7 +30,8 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "9router-stress-test": "./dist/index.js"
+    "9router-stress-test": "./dist/index.js",
+    "9router-companion": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc",
