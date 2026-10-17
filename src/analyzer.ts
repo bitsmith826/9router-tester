@@ -70,6 +70,16 @@ export function analyzeResults(
 
   const throughputRps = Number(((results.length / totalDurationMs) * 1000).toFixed(2));
 
+  // TTFT calculation for streaming requests
+  const validTtft = results
+    .filter(r => r.statusCode === 200 && r.ttftMs !== undefined)
+    .map(r => r.ttftMs!);
+
+  const ttftPercentiles = validTtft.length > 0 ? calculatePercentiles(validTtft) : undefined;
+
+  // Aggregate Rate Limit Telemetry (Retry-After, Reset timestamps)
+  const sampleRateLimit = results.find(r => r.statusCode === 429 && r.rateLimitDetails)?.rateLimitDetails;
+
   return {
     config,
     startTime: startTime.toISOString(),
@@ -83,6 +93,8 @@ export function analyzeResults(
     timeoutCount,
     throughputRps,
     latencies: calculatePercentiles(validLatencies.length > 0 ? validLatencies : results.map(r => r.latencyMs)),
+    ttft: ttftPercentiles,
+    rateLimitInfo: sampleRateLimit,
     fallbackCount,
     modelDistribution,
     statusDistribution

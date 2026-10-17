@@ -43,8 +43,12 @@ const server = http.createServer((req, res) => {
           usage: { prompt_tokens: 1, completion_tokens: 2, total_tokens: 3 }
         }));
       } else if (requestCounter <= 5) {
-        // Simulated 429 Rate Limit
-        res.writeHead(429);
+        // Simulated 429 Rate Limit with Telemetry
+        res.writeHead(429, {
+          'Retry-After': '12',
+          'x-ratelimit-reset-requests': '20s',
+          'x-ratelimit-remaining-requests': '0'
+        });
         res.end(JSON.stringify({
           error: {
             message: 'Rate limit exceeded: quota depleted or RPM exceeded',
@@ -113,9 +117,11 @@ server.listen(PORT, async () => {
     console.log(`✓ Model Discovery (/v1/models): ${fetchedModels.join(', ')} (Pass: ${hasModels})`);
     console.log(`✓ 200 OK Tracked: ${summary.successCount} (Pass: ${has200})`);
     console.log(`✓ 429 Rate Limit Detected: ${summary.rateLimitCount} (Pass: ${has429})`);
+    const hasTelemetry = summary.rateLimitInfo?.retryAfter === '12s';
+    console.log(`✓ 429 Telemetry (Retry-After): ${summary.rateLimitInfo?.retryAfter} (Pass: ${hasTelemetry})`);
     console.log(`✓ Smart Fallback Detected: ${summary.fallbackCount} (Pass: ${hasFallback})`);
 
-    if (has200 && has429 && hasFallback && hasModels) {
+    if (has200 && has429 && hasFallback && hasModels && hasTelemetry) {
       console.log('\n🎉 ALL MOCK VERIFICATION TESTS PASSED SUCCESSFULLY!\n');
     } else {
       console.error('\n❌ SOME VERIFICATION CHECKS FAILED!\n');

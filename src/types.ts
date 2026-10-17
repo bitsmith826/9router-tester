@@ -18,6 +18,13 @@ export interface TokenUsage {
   totalTokens?: number;
 }
 
+export interface RateLimitDetails {
+  retryAfter?: string;
+  reset?: string;
+  remaining?: string;
+  message?: string;
+}
+
 export interface RequestResult {
   id: number;
   statusCode: number;
@@ -28,6 +35,7 @@ export interface RequestResult {
   isFallback: boolean;
   fallbackInfo?: string;
   error?: string;
+  rateLimitDetails?: RateLimitDetails;
   tokenUsage?: TokenUsage;
 }
 
@@ -54,6 +62,8 @@ export interface BenchmarkSummary {
   timeoutCount: number;
   throughputRps: number;
   latencies: LatencyPercentiles;
+  ttft?: LatencyPercentiles;
+  rateLimitInfo?: RateLimitDetails;
   fallbackCount: number;
   modelDistribution: Record<string, number>;
   statusDistribution: Record<string, number>;

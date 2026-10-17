@@ -1,19 +1,26 @@
 import { BenchmarkConfig } from './types.js';
 
 export function buildChatPayload(config: BenchmarkConfig): Record<string, any> {
+  // Reasoning models (o1, o3, deepseek-reasoner/r1) error out if temperature is passed
+  const isReasoningModel = /^(o1|o3|deepseek-r)/i.test(config.model);
+
   if (config.mode === 'rpm') {
-    return {
+    const payload: Record<string, any> = {
       model: config.model,
       messages: [
         {
           role: 'user',
-          content: 'ping'
+          content: 'Say pong'
         }
       ],
       max_tokens: 5,
-      temperature: 0.1,
       stream: config.stream
     };
+
+    if (!isReasoningModel) {
+      payload.temperature = 0.1;
+    }
+    return payload;
   }
 
   // TPM Mode: heavier payload to challenge Token-Per-Minute boundaries
@@ -25,20 +32,20 @@ monitoring quotas, detecting HTTP 429 status codes, and executing failovers. Eva
 concurrency contention, backpressure handling, socket exhaustion, and failover telemetry.
 `.repeat(3);
 
-  return {
+  const payload: Record<string, any> = {
     model: config.model,
     messages: [
-      {
-        role: 'system',
-        content: 'You are an AI benchmark response simulator. Answer concisely.'
-      },
       {
         role: 'user',
         content: tpmSampleContext
       }
     ],
     max_tokens: 350,
-    temperature: 0.2,
     stream: config.stream
   };
+
+  if (!isReasoningModel) {
+    payload.temperature = 0.2;
+  }
+  return payload;
 }

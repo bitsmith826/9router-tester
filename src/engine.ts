@@ -74,6 +74,30 @@ export class StressTestEngine {
           errorBody = `HTTP ${statusCode}`;
         }
 
+        let parsedError = errorBody;
+        try {
+          const jsonErr = JSON.parse(errorBody);
+          if (jsonErr.error?.message) {
+            parsedError = jsonErr.error.message;
+          } else if (jsonErr.message) {
+            parsedError = jsonErr.message;
+          }
+        } catch (_) {}
+
+        let rateLimitDetails;
+        if (statusCode === 429) {
+          const retryAfter = respHeaders['retry-after'];
+          const reset = respHeaders['x-ratelimit-reset'] || respHeaders['x-ratelimit-reset-requests'];
+          const remaining = respHeaders['x-ratelimit-remaining-requests'] || respHeaders['x-ratelimit-remaining-tokens'];
+
+          rateLimitDetails = {
+            retryAfter: retryAfter ? `${retryAfter}s` : undefined,
+            reset,
+            remaining,
+            message: parsedError
+          };
+        }
+
         return {
           id,
           statusCode,
@@ -81,7 +105,8 @@ export class StressTestEngine {
           requestedModel: this.config.model,
           isFallback: Boolean(fallbackHeader),
           fallbackInfo: fallbackHeader ? `Via header: ${fallbackHeader}` : undefined,
-          error: errorBody.slice(0, 300)
+          error: parsedError.slice(0, 300),
+          rateLimitDetails
         };
       }
 

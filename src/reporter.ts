@@ -67,12 +67,41 @@ export class BenchmarkReporter {
     console.log(chalk.bold.white('\n⏱️  LATENCY PERCENTILES (200 OK)'));
     console.log(latencyTable.toString());
 
+    // 2b. TTFT Table (if streaming benchmarked)
+    if (summary.ttft) {
+      const ttftTable = new Table({
+        head: [
+          chalk.cyan('Min TTFT'),
+          chalk.cyan('Avg TTFT'),
+          chalk.cyan('p50'),
+          chalk.cyan('p90'),
+          chalk.cyan('p95'),
+          chalk.cyan('p99'),
+          chalk.cyan('Max TTFT')
+        ],
+        style: { head: [], border: ['gray'] }
+      });
+
+      ttftTable.push([
+        `${summary.ttft.min}ms`,
+        chalk.bold(`${summary.ttft.avg}ms`),
+        `${summary.ttft.p50}ms`,
+        `${summary.ttft.p90}ms`,
+        chalk.yellow.bold(`${summary.ttft.p95}ms`),
+        `${summary.ttft.p99}ms`,
+        chalk.red(`${summary.ttft.max}ms`)
+      ]);
+
+      console.log(chalk.bold.white('\n⚡ TIME TO FIRST TOKEN (TTFT - STREAMING)'));
+      console.log(ttftTable.toString());
+    }
+
     // 3. Smart Fallback Analysis
     if (summary.fallbackCount > 0) {
       console.log('\n' + chalk.yellow.bold('⚡ SMART FALLBACK DETECTED:'));
       console.log(
         chalk.yellow(
-          `  9Router automatically redirected ${summary.fallbackCount} requests to alternate provider models!`
+          `  Router automatically redirected ${summary.fallbackCount} requests to alternate provider models!`
         )
       );
 
@@ -92,11 +121,23 @@ export class BenchmarkReporter {
       console.log('\n' + chalk.red.bold('🚨 RATE LIMIT DETECTED (HTTP 429):'));
       console.log(
         chalk.red(
-          `  The upstream provider or 9Router quota limit was reached on ${summary.rateLimitCount} requests.`
+          `  Upstream provider / router quota limit was reached on ${summary.rateLimitCount} requests.`
         )
       );
+      if (summary.rateLimitInfo?.retryAfter) {
+        console.log(chalk.yellow(`  ⏱️  Retry-After Header : `) + chalk.white.bold(summary.rateLimitInfo.retryAfter));
+      }
+      if (summary.rateLimitInfo?.reset) {
+        console.log(chalk.yellow(`  🔄 Rate Limit Reset   : `) + chalk.white.bold(summary.rateLimitInfo.reset));
+      }
+      if (summary.rateLimitInfo?.remaining) {
+        console.log(chalk.yellow(`  📉 Remaining Quota    : `) + chalk.white.bold(summary.rateLimitInfo.remaining));
+      }
+      if (summary.rateLimitInfo?.message) {
+        console.log(chalk.yellow(`  💬 Provider Message   : `) + chalk.white(summary.rateLimitInfo.message));
+      }
       console.log(
-        chalk.gray('  Tip: Check 9Router server logs or switch to secondary tier model.')
+        chalk.gray('  Tip: Check router dashboard or configure secondary fallback tier.')
       );
     }
 
