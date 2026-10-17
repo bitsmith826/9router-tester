@@ -80,6 +80,34 @@ export function analyzeResults(
   // Aggregate Rate Limit Telemetry (Retry-After, Reset timestamps)
   const sampleRateLimit = results.find(r => r.statusCode === 429 && r.rateLimitDetails)?.rateLimitDetails;
 
+  // Aggregate Token Telemetry
+  let totalPromptTokens = 0;
+  let totalCompletionTokens = 0;
+  let totalTokens = 0;
+  let hasTokenData = false;
+
+  for (const r of results) {
+    if (r.tokenUsage) {
+      hasTokenData = true;
+      totalPromptTokens += r.tokenUsage.promptTokens || 0;
+      totalCompletionTokens += r.tokenUsage.completionTokens || 0;
+      totalTokens += r.tokenUsage.totalTokens || ((r.tokenUsage.promptTokens || 0) + (r.tokenUsage.completionTokens || 0));
+    }
+  }
+
+  const tokensPerSecond = hasTokenData && totalDurationMs > 0
+    ? Math.round((totalTokens / totalDurationMs) * 1000)
+    : 0;
+  const estimatedTpm = tokensPerSecond * 60;
+
+  const aggregateTokens = hasTokenData ? {
+    promptTokens: totalPromptTokens,
+    completionTokens: totalCompletionTokens,
+    totalTokens,
+    tokensPerSecond,
+    estimatedTpm
+  } : undefined;
+
   return {
     config,
     startTime: startTime.toISOString(),
@@ -94,6 +122,7 @@ export function analyzeResults(
     throughputRps,
     latencies: calculatePercentiles(validLatencies.length > 0 ? validLatencies : results.map(r => r.latencyMs)),
     ttft: ttftPercentiles,
+    tokenUsage: aggregateTokens,
     rateLimitInfo: sampleRateLimit,
     fallbackCount,
     modelDistribution,

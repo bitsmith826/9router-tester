@@ -121,6 +121,8 @@ server.listen(PORT, async () => {
     const hasTelemetry = summary.rateLimitInfo?.retryAfter === '12s';
     console.log(`✓ 429 Telemetry (Retry-After): ${summary.rateLimitInfo?.retryAfter} (Pass: ${hasTelemetry})`);
     console.log(`✓ Smart Fallback Detected: ${summary.fallbackCount} (Pass: ${hasFallback})`);
+    const hasTokenTelemetry = Boolean(summary.tokenUsage && summary.tokenUsage.totalTokens > 0);
+    console.log(`✓ Token Telemetry (Total: ${summary.tokenUsage?.totalTokens}, Speed: ${summary.tokenUsage?.tokensPerSecond} tok/s): (Pass: ${hasTokenTelemetry})`);
 
     // Verify Classifier
     const isCoding = classifyModel('claude-3-5-sonnet').category === 'coding';
@@ -220,7 +222,7 @@ server.listen(PORT, async () => {
       recommendedCombos.some(c => c.id === 'budget-saver');
     console.log(`✓ 9Router Recommended Combos (4 Archetypes Generated): (Pass: ${hasCombos})`);
 
-    if (has200 && has429 && hasFallback && hasModels && hasTelemetry && hasClassifier && hasCombos) {
+    if (has200 && has429 && hasFallback && hasModels && hasTelemetry && hasClassifier && hasCombos && hasTokenTelemetry) {
       console.log('\n🎉 ALL MOCK VERIFICATION TESTS PASSED SUCCESSFULLY!\n');
     } else {
       console.error('\n❌ SOME VERIFICATION CHECKS FAILED!\n');

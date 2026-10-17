@@ -14,6 +14,9 @@ export class BenchmarkReporter {
     console.log(chalk.gray(`Target URL   : `) + chalk.white.bold(summaryConfig.url));
     console.log(chalk.gray(`Target Model : `) + chalk.yellow.bold(summaryConfig.model));
     console.log(chalk.gray(`Test Mode    : `) + chalk.magenta.bold(summaryConfig.mode.toUpperCase()));
+    if (summaryConfig.maxTokens) {
+      console.log(chalk.gray(`Max Tokens   : `) + chalk.cyan.bold(summaryConfig.maxTokens.toString()));
+    }
     console.log(chalk.gray(`Total Burst  : `) + chalk.green.bold(summaryConfig.burstTotal) + chalk.gray(` requests`));
     console.log(chalk.gray(`Concurrency  : `) + chalk.blue.bold(summaryConfig.concurrency) + chalk.gray(` concurrent workers`));
     console.log(chalk.gray(`Streaming    : `) + (summaryConfig.stream ? chalk.green('Enabled') : chalk.gray('Disabled')));
@@ -39,6 +42,14 @@ export class BenchmarkReporter {
       ['Timeouts', summary.timeoutCount > 0 ? chalk.red(summary.timeoutCount.toString()) : chalk.gray('0')],
       ['Server Errors (5xx)', summary.serverErrorCount > 0 ? chalk.red(summary.serverErrorCount.toString()) : chalk.gray('0')]
     );
+
+    if (summary.tokenUsage) {
+      overviewTable.push(
+        ['Total Tokens Used', chalk.cyan.bold(summary.tokenUsage.totalTokens.toLocaleString())],
+        ['Token Split (In/Out)', `${summary.tokenUsage.promptTokens.toLocaleString()} / ${summary.tokenUsage.completionTokens.toLocaleString()}`],
+        ['Token Speed', chalk.green.bold(`${summary.tokenUsage.tokensPerSecond.toLocaleString()} tok/s (~${summary.tokenUsage.estimatedTpm.toLocaleString()} TPM)`)]
+      );
+    }
 
     console.log(chalk.bold.white('\n📊 BENCHMARK OVERVIEW'));
     console.log(overviewTable.toString());

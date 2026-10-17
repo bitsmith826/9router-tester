@@ -78,10 +78,10 @@ npm start
 - 🌐 **Universal Gateway Support:** Dirancang untuk bekerja dengan semua proxy OpenAI-compatible: **9Router**, **One API**, **New API**, **LiteLLM**, **OpenRouter**, **Portkey**, **Ollama**, **vLLM**, atau endpoint mandiri.
 - 💥 **Aggressive Burst Engine:** Kirim lonjakan request serentak dalam hitungan milidetik untuk menguji ketahanan gateway dan mendeteksi titik rate-limit provider seketika.
 - 🛡️ **Universal Smart Fallback Detection:** Otomatis mendeteksi saat provider utama limit dan router mengalihkan request ke model lapis kedua (misal: Claude $\rightarrow$ DeepSeek/Gemini) lewat inspeksi model respon dan header gateway.
-- 💰 **Dual Testing Modes:**
-  - **`--mode rpm` (Hemat Token):** Menggunakan prompt 1 kata (`ping`) dan `max_tokens: 5`. Menghantam batas panggilan per menit tanpa membakar kuota/biaya API.
-  - **`--mode tpm` (Beban Token Berat):** Mengirim payload token besar (konteks 1000+ token) untuk menguji kuota token per menit upstream.
-- 🧙 **Interactive CLI Wizard:** Cukup jalankan `npm start`, dan wizard interaktif (tanya-jawab) akan memandu Anda menentukan URL, memilih Model dari daftar, dan mengatur Concurrency.
+- 💰 **Dual Testing Modes & Token Telemetry:**
+  - **`--mode rpm` (Hemat Token):** Menggunakan prompt 1 kata (`ping`) dan `max_tokens: 5`. Menghantam batas panggilan per menit (RPM) tanpa membakar kuota/biaya API.
+  - **`--mode tpm` & `--max-tokens <n>` (Beban Token Maksimum):** Mengirim payload arsitektur mendalam dan meminta ribuan token output (default: 1.000 token, bisa dinaikkan ke 2.000, 4.000, atau 8.000 token) untuk menabrak batas kuota *Tokens-Per-Minute* (TPM) provider. Dilengkapi pelacak **Total Tokens Used**, **Token Split (In/Out)**, dan **Token Speed (`tok/s` & `~TPM`)** langsung di tabel terminal!
+- 🧙 **Interactive CLI Wizard:** Cukup jalankan `npm start`, dan wizard interaktif (tanya-jawab) akan memandu Anda menentukan URL, memilih Model dari daftar, mengatur mode RPM/TPM, dan jumlah token.
 - ⏱️ **Comprehensive Metrics:** Menghitung Throughput (RPS), status code breakdown, serta tabel persentil latensi lengkap (`p50`, `p90`, `p95`, `p99`, `Min`, `Max`, `Avg`).
 - 📁 **JSON Export:** Simpan hasil pengujian lengkap ke file JSON untuk audit atau benchmarking performa berkala.
 
@@ -148,6 +148,7 @@ node dist/index.js --model deepseek-chat --burst 15 --mode tpm --export reports/
 | `-b, --burst <n>` | `15` | Total request (atau jumlah panggilan per model jika all-models) |
 | `-c, --concurrency <n>` | `5` | Jumlah worker paralel serentak |
 | `--mode <rpm\|tpm>` | `rpm` | `rpm` (hemat token) atau `tpm` (token besar) |
+| `--max-tokens <n>` | `5` (RPM) / `1000` (TPM) | Jumlah token maksimum per request (misal: `2000` atau `4000` untuk konsumsi token masif) |
 | `--stream` | `false` | Aktifkan streaming untuk mengukur Time-To-First-Token (TTFT) |
 | `-o, --export <path>` | *None* | Path untuk menyimpan file laporan JSON |
 | `-i, --interactive` | `false` | Memaksa menjalankan wizard interaktif |

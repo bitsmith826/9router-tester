@@ -13,7 +13,7 @@ export function buildChatPayload(config: BenchmarkConfig): Record<string, any> {
           content: 'Say pong'
         }
       ],
-      max_tokens: 5,
+      max_tokens: config.maxTokens || 5,
       stream: config.stream
     };
 
@@ -23,24 +23,29 @@ export function buildChatPayload(config: BenchmarkConfig): Record<string, any> {
     return payload;
   }
 
-  // TPM Mode: heavier payload to challenge Token-Per-Minute boundaries
-  const tpmSampleContext = `
-Analyze the following architectural summary and provide a 3-paragraph executive overview:
-In distributed microservices, rate-limiting algorithms like Token Bucket, Leaky Bucket, and Fixed Window
-serve distinct purposes. An API gateway acts as the reverse proxy orchestrating upstream traffic,
-monitoring quotas, detecting HTTP 429 status codes, and executing failovers. Evaluate resilience,
-concurrency contention, backpressure handling, socket exhaustion, and failover telemetry.
-`.repeat(3);
+  // TPM Mode: heavy token payload to push Token-Per-Minute and context limits
+  const targetMaxTokens = config.maxTokens || 1000;
+
+  const tpmPrompt = `
+Analyze the following distributed systems architecture in exhaustive technical depth:
+Context: In high-throughput microservices architectures, rate-limiting mechanisms (Token Bucket, Leaky Bucket, Sliding Window Counters, Redis-backed rate limiting) protect upstream LLM providers from quota exhaustion and cascading 429 failures. Reverse proxies and AI Gateways orchestrate traffic distribution, dynamic failover, backpressure mitigation, retry-after tracking, and connection pooling.
+
+Instructions:
+1. Provide a comprehensive, full architectural specification for an ultra-resilient AI API gateway.
+2. Detail edge-case failure modes: socket exhaustion, DNS thrashing, buffer pool starvation, and upstream timeout spikes.
+3. Include extensive, un-truncated TypeScript & Go code implementations illustrating resilient HTTP client pooling and token-bucket algorithms.
+4. Elaborate on every component with full technical depth and mathematical proofs where relevant. Do not abbreviate or summarize. Generate as comprehensive and detailed a response as possible.
+`.trim();
 
   const payload: Record<string, any> = {
     model: config.model,
     messages: [
       {
         role: 'user',
-        content: tpmSampleContext
+        content: tpmPrompt
       }
     ],
-    max_tokens: 350,
+    max_tokens: targetMaxTokens,
     stream: config.stream
   };
 
@@ -49,3 +54,4 @@ concurrency contention, backpressure handling, socket exhaustion, and failover t
   }
   return payload;
 }
+

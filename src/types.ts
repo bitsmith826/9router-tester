@@ -12,6 +12,7 @@ export interface BenchmarkConfig {
   stream: boolean;
   allModels?: boolean;
   modelList?: string[];
+  maxTokens?: number;
   scanMode?: 'quick-scan' | 'deep-stress' | 'single-model';
 }
 
@@ -19,6 +20,14 @@ export interface TokenUsage {
   promptTokens?: number;
   completionTokens?: number;
   totalTokens?: number;
+}
+
+export interface AggregateTokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  tokensPerSecond: number;
+  estimatedTpm: number;
 }
 
 export interface RateLimitDetails {
@@ -66,6 +75,7 @@ export interface BenchmarkSummary {
   throughputRps: number;
   latencies: LatencyPercentiles;
   ttft?: LatencyPercentiles;
+  tokenUsage?: AggregateTokenUsage;
   rateLimitInfo?: RateLimitDetails;
   fallbackCount: number;
   modelDistribution: Record<string, number>;

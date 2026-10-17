@@ -43,6 +43,7 @@ program
   .option('-b, --burst <number>', 'Burst requests count (total or per-model)', '15')
   .option('-c, --concurrency <number>', 'Concurrent workers', '5')
   .option('--mode <mode>', 'Test mode: rpm (minimal token) or tpm (heavy token)', 'rpm')
+  .option('--max-tokens <number>', 'Max tokens per request (default: 5 for rpm, 1000 for tpm)')
   .option('--timeout <ms>', 'Request timeout in milliseconds', '30000')
   .option('--stream', 'Use streaming mode for TTFT benchmarking', false)
   .option('-o, --export <path>', 'Path to save detailed JSON report')
@@ -178,6 +179,14 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
     },
     {
       type: 'number',
+      name: 'maxTokens',
+      message: 'Max Tokens per Request (default: 1000, isi misal 2000 / 4000 untuk konsumsi token masif):',
+      default: defaults.maxTokens || 1000,
+      validate: (val: number) => val > 0 || 'Harus lebih dari 0',
+      when: (ans: any) => ans.mode === 'tpm' && ans.selectedOption !== QUICK_SCAN_KEY && ans.selectedOption !== RECOMMEND_COMBOS_KEY
+    },
+    {
+      type: 'number',
       name: 'burstTotal',
       message: (ans: any) => ans.selectedOption === DEEP_STRESS_ALL_KEY
         ? 'Jumlah Panggilan per Model (misal: 3-5 - cepat & hemat kuota):'
@@ -234,6 +243,7 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
     burstTotal: isQuickScan ? 1 : (testAnswers.burstTotal || 15),
     concurrency: isQuickScan ? 4 : (testAnswers.concurrency || 5),
     mode: isQuickScan ? 'rpm' : (testAnswers.mode as BenchmarkMode || 'rpm'),
+    maxTokens: testAnswers.maxTokens || defaults.maxTokens,
     timeoutMs: defaults.timeoutMs || 25000,
     stream: defaults.stream || false,
     exportPath: testAnswers.exportPath,
@@ -441,6 +451,7 @@ async function main() {
       burstTotal: parseInt(opts.burst, 10),
       concurrency: parseInt(opts.concurrency, 10),
       mode: (opts.mode.toLowerCase() === 'tpm' ? 'tpm' : 'rpm') as BenchmarkMode,
+      maxTokens: opts.maxTokens ? parseInt(opts.maxTokens, 10) : undefined,
       timeoutMs: parseInt(opts.timeout, 10),
       stream: Boolean(opts.stream),
       exportPath: opts.export,
@@ -464,6 +475,7 @@ async function main() {
       burstTotal: isQuickScan ? 1 : parseInt(opts.burst, 10),
       concurrency: isQuickScan ? 4 : parseInt(opts.concurrency, 10),
       mode: (opts.mode.toLowerCase() === 'tpm' ? 'tpm' : 'rpm') as BenchmarkMode,
+      maxTokens: opts.maxTokens ? parseInt(opts.maxTokens, 10) : undefined,
       timeoutMs: parseInt(opts.timeout, 10),
       stream: Boolean(opts.stream),
       exportPath: opts.export || (opts.combos ? 'reports/recommended-combos.json' : undefined),
