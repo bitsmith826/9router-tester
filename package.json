@@ -1,13 +1,13 @@
 {
-  "name": "9router-stress-test",
+  "name": "9router-tester",
   "version": "1.3.1",
-  "description": "All-in-One CLI companion for 9Router: Quick Health Doctor, Smart Combo Architect, and Rate-Limit (RPM/TPM) Stress Tester.",
+  "description": "CLI tool untuk mengetes model AI di 9Router: Quick Health Scan, Racik Combo Fallback, dan Uji Limit (RPM/TPM).",
   "keywords": [
     "9router",
-    "9router-companion",
+    "9router-tester",
     "ai-router",
-    "model-doctor",
-    "combo-architect",
+    "model-tester",
+    "combo-recommender",
     "cursor",
     "cline",
     "stress-test",
@@ -23,15 +23,16 @@
   "author": "bitsmith826",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bitsmith826/9router-stress-test.git"
+    "url": "https://github.com/bitsmith826/9router-tester.git"
   },
-  "homepage": "https://github.com/bitsmith826/9router-stress-test#readme",
+  "homepage": "https://github.com/bitsmith826/9router-tester#readme",
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "9router-stress-test": "./dist/index.js",
-    "9router-companion": "./dist/index.js"
+    "9router-tester": "./dist/index.js",
+    "9router-companion": "./dist/index.js",
+    "9router-stress-test": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc",

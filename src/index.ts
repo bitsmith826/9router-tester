@@ -53,13 +53,13 @@ function saveLocalConfig(config: { url?: string; apiKey?: string }) {
 const program = new Command();
 
 program
-  .name('9router-companion')
-  .description('All-in-One CLI companion for 9Router: Quick Health Doctor, Smart Combo Architect, and Rate-Limit (RPM/TPM) Stress Tester.')
+  .name('9router-tester')
+  .description('CLI tool untuk mengetes model AI di 9Router: Quick Health Scan, Racik Combo Fallback, dan Uji Limit (RPM/TPM).')
   .version('1.3.1')
   .option('-u, --url <url>', 'AI Router endpoint URL', process.env.ROUTER_URL || 'http://localhost:20128/v1')
   .option('-k, --key <key>', 'AI Router API Key', process.env.API_KEY || '9router')
   .option('-m, --model <model>', 'Target model to test', process.env.DEFAULT_MODEL || 'claude-3-5-sonnet')
-  .option('-d, --doctor', 'Run instant Health Doctor (3-5s quick scan untuk model hidup/mati & Cursor copy-paste)', false)
+  .option('-d, --doctor', 'Run instant Health Scan (3-5s untuk cek model hidup/mati & Cursor copy-paste)', false)
   .option('-q, --quick-scan', 'Alias for --doctor', false)
   .option('--combos', 'Run health scan and generate 9Router Recommended Combos (Coding, Speed, Reasoning, Budget)', false)
   .option('-s, --stress', 'Run Deep Stress Test on all discovered models with burst load', false)
@@ -79,8 +79,8 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
   const defaultKey = defaults.apiKey || localConfig.apiKey || process.env.API_KEY || '9router';
 
   console.log('\n' + chalk.cyan.bold('╔═══════════════════════════════════════════════════════════╗'));
-  console.log(chalk.cyan.bold('║                 9ROUTER COMPANION CLI                     ║'));
-  console.log(chalk.cyan.bold('║     Health Doctor • Combo Architect • Stress Tester       ║'));
+  console.log(chalk.cyan.bold('║                     9ROUTER TESTER                        ║'));
+  console.log(chalk.cyan.bold('║     Health Scan • Combo Recommender • Stress Test         ║'));
   console.log(chalk.cyan.bold('╚═══════════════════════════════════════════════════════════╝\n'));
 
   // Step 1: Endpoint & Auth

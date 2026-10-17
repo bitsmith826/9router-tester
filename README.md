@@ -1,6 +1,6 @@
-# ⚡ 9Router Companion CLI
-### *The Ultimate All-in-One CLI for 9Router: Health Doctor, Combo Architect & Rate-Limit Stress Tester*
-*(Also compatible with One API, New API, LiteLLM, OpenRouter, Ollama & vLLM)*
+# ⚡ 9Router Tester
+### *CLI Tool untuk Mengetes Model AI di 9Router: Health Scan, Racik Combo Fallback & Uji Limit*
+*(Kompatibel juga dengan One API, New API, LiteLLM, OpenRouter, Ollama & vLLM)*
 
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -8,7 +8,7 @@
 [![9Router Compatible](https://img.shields.io/badge/9Router-Compatible-FF6B6B)](https://github.com/decolua/9router)
 [![OpenAI Compatible](https://img.shields.io/badge/OpenAI--API-Compatible-412991)](https://platform.openai.com/)
 
-> **All-in-One CLI companion for 9Router (also compatible with One API, New API, LiteLLM, OpenRouter, Ollama, vLLM).**
+> **CLI tool untuk mengetes model AI di 9Router (juga kompatibel dengan One API, New API, LiteLLM, OpenRouter, Ollama, vLLM).**
 > 
 > *Deteksi model hidup/mati dalam 3 detik untuk Cursor, racik paket Combo fallback 3-tier otomatis, dan uji batas ketahanan rate-limit (RPM/TPM) provider AI Anda.*
 
@@ -20,8 +20,8 @@ Jika Anda menjalankan **9Router di laptop Anda (`localhost:20128`)**, Anda bisa 
 
 ```bash
 # 1. Clone repositori ini
-git clone https://github.com/bitsmith826/9router-stress-test.git
-cd 9router-stress-test
+git clone https://github.com/bitsmith826/9router-tester.git
+cd 9router-tester
 
 # 2. Install dependensi & build
 npm install
@@ -35,8 +35,8 @@ npm start
 
 ```text
 ╔═══════════════════════════════════════════════════════════╗
-║                 9ROUTER COMPANION CLI                     ║
-║     Health Doctor • Combo Architect • Stress Tester       ║
+║                     9ROUTER TESTER                        ║
+║     Health Scan • Combo Recommender • Stress Test         ║
 ╚═══════════════════════════════════════════════════════════╝
 
 ? Base URL (Endpoint 9Router): http://localhost:20128/v1                  <-- [Tekan Enter]
