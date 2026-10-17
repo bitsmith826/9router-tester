@@ -1,0 +1,45 @@
+{
+  "name": "9router-stress-test",
+  "version": "1.0.0",
+  "description": "High-performance CLI stress-testing and rate-limit benchmarking tool for 9Router AI Gateway and its upstream providers.",
+  "keywords": [
+    "9router",
+    "ai-proxy",
+    "stress-test",
+    "load-test",
+    "rate-limit",
+    "benchmark",
+    "llm",
+    "openai-compatible",
+    "fallback-detection"
+  ],
+  "author": "Antigravity Open Source",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "9router-stress-test": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc && node dist/index.js",
+    "test:mock": "node dist/test-mock.js"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "cli-table3": "^0.6.5",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5",
+    "inquirer": "^9.3.2",
+    "ora": "^8.0.1"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^20.14.9",
+    "typescript": "^5.5.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
