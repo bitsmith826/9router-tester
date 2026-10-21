@@ -148,6 +148,8 @@ node dist/index.js --url https://ai.domainanda.com/v1 --key RahasiaAnda123! --do
 | `--max-tokens <n>` | `5` (RPM) / `1000` (TPM) | Jumlah token maksimum per request (misal: `2000` atau `4000` untuk konsumsi token masif) |
 | `--stream` | `false` | Aktifkan streaming untuk mengukur Time-To-First-Token (TTFT) |
 | `-o, --export <path>` | *None* | Path untuk menyimpan file laporan JSON |
+| `-f, --free` | `false` | **Filter Model Gratis:** Hanya tampilkan & uji model berlabel `:free` |
+| `--delay <ms>` | `0` | Delay jeda waktu antar request dalam milidetik (pacing ramah rate-limit) |
 | `-i, --interactive` | `false` | Memaksa menjalankan wizard interaktif |
 | `-h, --help` | - | Tampilkan panduan opsi |
 

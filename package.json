@@ -1,6 +1,6 @@
 {
   "name": "9router-tester",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "CLI tool untuk mengetes model AI di 9Router: Quick Health Scan, Racik Combo Fallback, dan Uji Limit (RPM/TPM).",
   "keywords": [
     "9router",

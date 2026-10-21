@@ -4,6 +4,7 @@ import { analyzeResults } from './analyzer.js';
 import { BenchmarkReporter } from './reporter.js';
 import { BenchmarkConfig } from './types.js';
 import { classifyModel, buildRecommendedCombos } from './classifier.js';
+import { isFreeModel } from './models.js';
 
 // Starts a mock 9Router server that returns:
 // - 200 OK for first 3 requests
@@ -30,6 +31,21 @@ const server = http.createServer((req, res) => {
     let body = '';
     req.on('data', chunk => body += chunk);
     req.on('end', () => {
+      let parsedBody: any = {};
+      try {
+        parsedBody = JSON.parse(body || '{}');
+      } catch (_) {}
+
+      if (parsedBody.stream) {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.writeHead(200);
+        res.write('data: {"id":"chatcmpl-stream","object":"chat.completion.chunk","model":"claude-3-5-sonnet","choices":[{"index":0,"delta":{"content":"pong"}}]}\n\n');
+        res.write('data: {"id":"chatcmpl-stream","object":"chat.completion.chunk","model":"claude-3-5-sonnet","choices":[],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6}}\n\n');
+        res.write('data: [DONE]\n\n');
+        res.end();
+        return;
+      }
+
       requestCounter++;
       res.setHeader('Content-Type', 'application/json');
 
@@ -132,6 +148,13 @@ server.listen(PORT, async () => {
     const hasClassifier = isCoding && isReasoning && isSpeed && isBudget;
     console.log(`✓ Smart Model Classifier (Coding/Reasoning/Speed/Budget): (Pass: ${hasClassifier})`);
 
+    const freePass = isFreeModel('th-live/deepseek-v4.1-flash:free') &&
+      isFreeModel('xkiro/qwen/qwen3.8-max:free') &&
+      isFreeModel('minimax-m3.1-flash-free') &&
+      !isFreeModel('claude-3-5-sonnet') &&
+      !isFreeModel('gpt-4o');
+    console.log(`✓ Free Model Filter (isFreeModel): (Pass: ${freePass})`);
+
     // Test Multi-Model Report & Combo Generation
     const mockMultiReport = {
       timestamp: new Date().toISOString(),
@@ -222,7 +245,50 @@ server.listen(PORT, async () => {
       recommendedCombos.some(c => c.id === 'budget-saver');
     console.log(`✓ 9Router Recommended Combos (4 Archetypes Generated): (Pass: ${hasCombos})`);
 
-    if (has200 && has429 && hasFallback && hasModels && hasTelemetry && hasClassifier && hasCombos && hasTokenTelemetry) {
+    // Verify Streaming Engine SSE Token Extraction & TTFT
+    const streamTestConfig: BenchmarkConfig = {
+      url: `http://127.0.0.1:${PORT}/v1`,
+      apiKey: 'test-key',
+      model: 'claude-3-5-sonnet',
+      burstTotal: 1,
+      concurrency: 1,
+      mode: 'rpm',
+      timeoutMs: 5000,
+      stream: true
+    };
+    const streamEngine = new StressTestEngine(streamTestConfig);
+    const streamResults = await streamEngine.run();
+    const streamSummary = analyzeResults(streamTestConfig, streamResults, new Date(), new Date());
+    const streamTokenPass = Boolean(
+      streamResults[0]?.tokenUsage?.totalTokens === 6 &&
+      streamResults[0]?.ttftMs !== undefined &&
+      streamSummary.tokenUsage?.totalTokens === 6
+    );
+    console.log(`✓ Streaming Mode Telemetry (TTFT & SSE Token Extraction): (Pass: ${streamTokenPass})`);
+
+    // Verify Timeout Classification (HTTP 504 & HTTP 524 separated from 5xx)
+    const timeoutSampleResults = [
+      { id: 1, statusCode: 504, latencyMs: 30000, requestedModel: 'test', isFallback: false, error: 'Gateway Timeout' },
+      { id: 2, statusCode: 524, latencyMs: 60000, requestedModel: 'test', isFallback: false, error: 'Cloudflare Timeout' },
+      { id: 3, statusCode: 500, latencyMs: 120, requestedModel: 'test', isFallback: false, error: 'Internal Server Error' },
+      { id: 4, statusCode: 0, latencyMs: 30000, requestedModel: 'test', isFallback: false, error: 'Request Timeout (exceeded limit)' }
+    ];
+    const timeoutSummary = analyzeResults(testConfig, timeoutSampleResults as any, new Date(), new Date());
+    const timeoutClassifiedCorrectly = timeoutSummary.timeoutCount === 3 && timeoutSummary.serverErrorCount === 1;
+    console.log(`✓ Timeout Classification (504/524/0 accurately tracked): (Pass: ${timeoutClassifiedCorrectly})`);
+
+    if (
+      has200 &&
+      has429 &&
+      hasFallback &&
+      hasModels &&
+      hasTelemetry &&
+      hasClassifier &&
+      hasCombos &&
+      hasTokenTelemetry &&
+      streamTokenPass &&
+      timeoutClassifiedCorrectly
+    ) {
       console.log('\n🎉 ALL MOCK VERIFICATION TESTS PASSED SUCCESSFULLY!\n');
     } else {
       console.error('\n❌ SOME VERIFICATION CHECKS FAILED!\n');

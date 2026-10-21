@@ -44,6 +44,11 @@ export function analyzeResults(
   const statusDistribution: Record<string, number> = {};
 
   for (const r of results) {
+    const isTimeout = r.statusCode === 0 ||
+      r.statusCode === 504 ||
+      r.statusCode === 524 ||
+      Boolean(r.error && r.error.toLowerCase().includes('timeout'));
+
     const statusKey = r.statusCode === 0 ? 'TIMEOUT/ERR' : `${r.statusCode}`;
     statusDistribution[statusKey] = (statusDistribution[statusKey] || 0) + 1;
 
@@ -51,12 +56,12 @@ export function analyzeResults(
       successCount++;
     } else if (r.statusCode === 429) {
       rateLimitCount++;
+    } else if (isTimeout) {
+      timeoutCount++;
     } else if (r.statusCode >= 400 && r.statusCode < 500) {
       clientErrorCount++;
     } else if (r.statusCode >= 500) {
       serverErrorCount++;
-    } else if (r.statusCode === 0 || (r.error && r.error.toLowerCase().includes('timeout'))) {
-      timeoutCount++;
     }
 
     if (r.isFallback) {

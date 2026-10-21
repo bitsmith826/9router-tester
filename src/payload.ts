@@ -17,6 +17,10 @@ export function buildChatPayload(config: BenchmarkConfig): Record<string, any> {
       stream: config.stream
     };
 
+    if (config.stream) {
+      payload.stream_options = { include_usage: true };
+    }
+
     if (!isReasoningModel) {
       payload.temperature = 0.1;
     }
@@ -48,6 +52,10 @@ Instructions:
     max_tokens: targetMaxTokens,
     stream: config.stream
   };
+
+  if (config.stream) {
+    payload.stream_options = { include_usage: true };
+  }
 
   if (!isReasoningModel) {
     payload.temperature = 0.2;

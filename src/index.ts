@@ -24,7 +24,9 @@ import {
   QUICK_SCAN_KEY,
   DEEP_STRESS_ALL_KEY,
   FILTER_CATEGORY_KEY,
-  CUSTOM_MODEL_KEY
+  FILTER_FREE_KEY,
+  CUSTOM_MODEL_KEY,
+  isFreeModel
 } from './models.js';
 import { formatModelLabel, classifyModel } from './classifier.js';
 
@@ -55,7 +57,7 @@ const program = new Command();
 program
   .name('9router-tester')
   .description('CLI tool untuk mengetes model AI di 9Router: Quick Health Scan, Racik Combo Fallback, dan Uji Limit (RPM/TPM).')
-  .version('1.3.1')
+  .version('1.3.2')
   .option('-u, --url <url>', 'AI Router endpoint URL', process.env.ROUTER_URL || 'http://localhost:20128/v1')
   .option('-k, --key <key>', 'AI Router API Key', process.env.API_KEY || '9router')
   .option('-m, --model <model>', 'Target model to test', process.env.DEFAULT_MODEL || 'claude-3-5-sonnet')
@@ -71,6 +73,8 @@ program
   .option('--timeout <ms>', 'Request timeout in milliseconds', '30000')
   .option('--stream', 'Use streaming mode for TTFT benchmarking', false)
   .option('-o, --export <path>', 'Path to save detailed JSON report')
+  .option('--delay <ms>', 'Delay between requests in milliseconds', '0')
+  .option('-f, --free', 'Hanya tampilkan & uji model-model gratis (:free)', false)
   .option('-i, --interactive', 'Launch interactive setup wizard', false);
 
 async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Promise<BenchmarkConfig> {
@@ -112,40 +116,53 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
   }).start();
 
   const fetchedModels = await fetchRouterModels(connectionAnswers.url, connectionAnswers.apiKey);
-  const availableModelList = fetchedModels.length > 0 ? fetchedModels : POPULAR_MODEL_PRESETS;
-  
+  const rawModelList = fetchedModels.length > 0 ? fetchedModels : POPULAR_MODEL_PRESETS;
+  const availableModelList = defaults.onlyFree
+    ? (rawModelList.filter(isFreeModel).length > 0 ? rawModelList.filter(isFreeModel) : rawModelList)
+    : rawModelList;
   
   let modelChoices: Array<{ name: string; value: string }>;
 
-  const buildActionChoices = (models: string[]) => [
-    {
-      name: chalk.cyan.bold(`💡 [RECOMMEND 9ROUTER COMBOS] Scan & Racik Paket Combo Fallback Otomatis`),
-      value: RECOMMEND_COMBOS_KEY
-    },
-    {
-      name: chalk.green.bold(`🩺 [QUICK HEALTH SCAN] Pindai Cepat Model Hidup & Mati (3-5 Detik Selesai)`),
-      value: QUICK_SCAN_KEY
-    },
-    {
-      name: chalk.yellow.bold(`💥 [DEEP STRESS TEST] Uji Limit & Throughput Semua Model (${models.length} Model)`),
-      value: DEEP_STRESS_ALL_KEY
-    },
-    ...(models.length > 5 ? [{
-      name: chalk.magenta.bold(`🔍 [FILTER KATEGORI] Cari/Saring Model (Coding / Speed / Reasoning / Budget)`),
-      value: FILTER_CATEGORY_KEY
-    }] : []),
-    ...models.map(m => ({ name: formatModelLabel(m), value: m })),
-    { name: chalk.gray('✏️  [Ketik nama model kustom secara manual...]'), value: CUSTOM_MODEL_KEY }
-  ];
+  const buildActionChoices = (models: string[]) => {
+    const freeModels = models.filter(isFreeModel);
+    return [
+      {
+        name: chalk.cyan.bold(`💡 [RECOMMEND 9ROUTER COMBOS] Scan & Racik Paket Combo Fallback Otomatis`),
+        value: RECOMMEND_COMBOS_KEY
+      },
+      {
+        name: chalk.green.bold(`🩺 [QUICK HEALTH SCAN] Pindai Cepat Model Hidup & Mati (3-5 Detik Selesai)`),
+        value: QUICK_SCAN_KEY
+      },
+      {
+        name: chalk.yellow.bold(`💥 [DEEP STRESS TEST] Uji Limit & Throughput Semua Model (${models.length} Model)`),
+        value: DEEP_STRESS_ALL_KEY
+      },
+      ...(freeModels.length > 0 && freeModels.length < models.length ? [{
+        name: chalk.greenBright.bold(`🎁 [FILTER MODEL FREE] Saring & Hanya Tampilkan Model Gratis (:free) (${freeModels.length} Model)`),
+        value: FILTER_FREE_KEY
+      }] : []),
+      ...(models.length > 5 ? [{
+        name: chalk.magenta.bold(`🔍 [FILTER KATEGORI] Cari/Saring Model (Free / Coding / Speed / Reasoning / Budget)`),
+        value: FILTER_CATEGORY_KEY
+      }] : []),
+      ...models.map(m => ({ name: formatModelLabel(m), value: m })),
+      { name: chalk.gray('✏️  [Ketik nama model kustom secara manual...]'), value: CUSTOM_MODEL_KEY }
+    ];
+  };
 
   if (fetchedModels.length > 0) {
-    modelSpinner.succeed(chalk.green(`Berhasil menemukan ${fetchedModels.length} model aktif dari router!`));
-    modelChoices = buildActionChoices(fetchedModels);
+    if (defaults.onlyFree) {
+      modelSpinner.succeed(chalk.green(`Berhasil menemukan ${availableModelList.length} model gratis (:free) dari router!`));
+    } else {
+      modelSpinner.succeed(chalk.green(`Berhasil menemukan ${fetchedModels.length} model aktif dari router!`));
+    }
+    modelChoices = buildActionChoices(availableModelList);
   } else {
     modelSpinner.info(
       chalk.gray('Router tidak mengekspos /v1/models atau offline. Menampilkan daftar model AI populer:')
     );
-    modelChoices = buildActionChoices(POPULAR_MODEL_PRESETS);
+    modelChoices = buildActionChoices(availableModelList);
   }
 
   // Step 3: Select Action or Model
@@ -166,10 +183,21 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
     },
     {
       type: 'list',
+      name: 'filteredFreeModel',
+      message: 'Pilih Model Gratis (:free):',
+      when: (ans: any) => ans.selectedOption === FILTER_FREE_KEY,
+      choices: () => {
+        const freeList = availableModelList.filter(isFreeModel);
+        return freeList.map(m => ({ name: formatModelLabel(m), value: m }));
+      }
+    },
+    {
+      type: 'list',
       name: 'categoryFilter',
       message: 'Pilih Kategori Model:',
       when: (ans: any) => ans.selectedOption === FILTER_CATEGORY_KEY,
       choices: [
+        { name: '🎁 Model Gratis / Free Tier (:free)', value: 'free' },
         { name: '💻 Coding Pro (Sonnet, GPT-4o, DeepSeek-V3, Qwen Coder)', value: 'coding' },
         { name: '⚡ Speed & Autocomplete (Gemini Flash, Haiku, 4o-mini)', value: 'speed' },
         { name: '🧠 Deep Reasoning (DeepSeek-R1, o1, o3-mini)', value: 'reasoning' },
@@ -182,7 +210,9 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
       message: 'Pilih Model dari Kategori Terpilih:',
       when: (ans: any) => ans.selectedOption === FILTER_CATEGORY_KEY,
       choices: (ans: any) => {
-        const filtered = availableModelList.filter(m => classifyModel(m).category === ans.categoryFilter);
+        const filtered = ans.categoryFilter === 'free'
+          ? availableModelList.filter(isFreeModel)
+          : availableModelList.filter(m => classifyModel(m).category === ans.categoryFilter);
         const listToDisplay = filtered.length > 0 ? filtered : availableModelList;
         return listToDisplay.map(m => ({ name: formatModelLabel(m), value: m }));
       }
@@ -238,6 +268,14 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
       when: (ans: any) => ans.selectedOption !== QUICK_SCAN_KEY && ans.selectedOption !== RECOMMEND_COMBOS_KEY
     },
     {
+      type: 'number',
+      name: 'delayMs',
+      message: 'Delay antar request dalam milidetik (0 untuk tanpa jeda / burst instan):',
+      default: defaults.delayMs || 0,
+      validate: (val: number) => val >= 0 || 'Harus 0 atau positif',
+      when: (ans: any) => ans.selectedOption !== QUICK_SCAN_KEY && ans.selectedOption !== RECOMMEND_COMBOS_KEY
+    },
+    {
       type: 'confirm',
       name: 'saveReport',
       message: 'Simpan laporan benchmark ke file JSON?',
@@ -264,11 +302,13 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
 
   const targetModel = isAll
     ? availableModelList[0]
-    : testAnswers.selectedOption === FILTER_CATEGORY_KEY
-      ? testAnswers.filteredModel
-      : testAnswers.selectedOption === CUSTOM_MODEL_KEY
-        ? testAnswers.customModel
-        : testAnswers.selectedOption;
+    : testAnswers.selectedOption === FILTER_FREE_KEY
+      ? testAnswers.filteredFreeModel
+      : testAnswers.selectedOption === FILTER_CATEGORY_KEY
+        ? testAnswers.filteredModel
+        : testAnswers.selectedOption === CUSTOM_MODEL_KEY
+          ? testAnswers.customModel
+          : testAnswers.selectedOption;
 
   return {
     url: connectionAnswers.url,
@@ -283,7 +323,9 @@ async function promptInteractiveWizard(defaults: Partial<BenchmarkConfig>): Prom
     exportPath: testAnswers.exportPath,
     allModels: isAll,
     modelList: availableModelList,
-    scanMode: isQuickScan ? 'quick-scan' : isDeepStressAll ? 'deep-stress' : 'single-model'
+    scanMode: isQuickScan ? 'quick-scan' : isDeepStressAll ? 'deep-stress' : 'single-model',
+    delayMs: testAnswers.delayMs !== undefined ? testAnswers.delayMs : (defaults.delayMs || 0),
+    onlyFree: defaults.onlyFree
   };
 }
 
@@ -389,7 +431,9 @@ async function runMultiModelBenchmark(config: BenchmarkConfig) {
   };
 
   // Run with concurrency worker queue for speed
-  const parallelWorkerLimit = isQuickScan ? 4 : 2;
+  const parallelWorkerLimit = config.concurrency !== undefined
+    ? Math.min(config.concurrency, modelsToTest.length)
+    : (isQuickScan ? 4 : 2);
   const queue = [...modelsToTest];
   const workers: Promise<void>[] = [];
 
@@ -413,6 +457,10 @@ async function runMultiModelBenchmark(config: BenchmarkConfig) {
       }
 
       multiReport.models.push(modelResult);
+
+      if (config.delayMs && config.delayMs > 0 && queue.length > 0) {
+        await new Promise((resolve) => setTimeout(resolve, config.delayMs));
+      }
     }
   };
 
@@ -481,6 +529,13 @@ async function main() {
   const resolvedUrl = hasExplicitUrl ? opts.url : (localConfig.url || opts.url);
   const resolvedKey = hasExplicitKey ? opts.key : (localConfig.apiKey || opts.key);
 
+  if (hasExplicitUrl || hasExplicitKey) {
+    saveLocalConfig({
+      url: resolvedUrl,
+      apiKey: resolvedKey
+    });
+  }
+
   let config: BenchmarkConfig;
 
   if (opts.interactive || !isExplicitFlagProvided) {
@@ -496,7 +551,8 @@ async function main() {
       stream: Boolean(opts.stream),
       exportPath: opts.export,
       allModels: Boolean(opts.allModels || opts.stress || opts.quickScan || opts.doctor || opts.combos),
-      scanMode: (opts.doctor || opts.quickScan || opts.combos) ? 'quick-scan' : (opts.stress || opts.allModels) ? 'deep-stress' : undefined
+      scanMode: (opts.doctor || opts.quickScan || opts.combos) ? 'quick-scan' : (opts.stress || opts.allModels) ? 'deep-stress' : undefined,
+      onlyFree: Boolean(opts.free)
     });
   } else {
     const isDoctor = Boolean(opts.doctor || opts.quickScan);
@@ -508,7 +564,9 @@ async function main() {
     let modelList: string[] | undefined;
     if (isAll) {
       const fetched = await fetchRouterModels(resolvedUrl, resolvedKey);
-      modelList = fetched.length > 0 ? fetched : POPULAR_MODEL_PRESETS;
+      const raw = fetched.length > 0 ? fetched : POPULAR_MODEL_PRESETS;
+      modelList = opts.free ? raw.filter(isFreeModel) : raw;
+      if (modelList.length === 0) modelList = raw;
     }
 
     config = {
@@ -516,7 +574,9 @@ async function main() {
       apiKey: resolvedKey,
       model: opts.model,
       burstTotal: isQuickScan ? 1 : parseInt(opts.burst, 10),
-      concurrency: isQuickScan ? 4 : parseInt(opts.concurrency, 10),
+      concurrency: (process.argv.includes('-c') || process.argv.includes('--concurrency'))
+        ? parseInt(opts.concurrency, 10)
+        : (isQuickScan ? 4 : parseInt(opts.concurrency, 10)),
       mode: (opts.mode.toLowerCase() === 'tpm' ? 'tpm' : 'rpm') as BenchmarkMode,
       maxTokens: opts.maxTokens ? parseInt(opts.maxTokens, 10) : undefined,
       timeoutMs: parseInt(opts.timeout, 10),
@@ -524,7 +584,9 @@ async function main() {
       exportPath: opts.export || (isCombos ? 'reports/recommended-combos.json' : undefined),
       allModels: isAll,
       modelList,
-      scanMode: isQuickScan ? 'quick-scan' : isStress ? 'deep-stress' : 'single-model'
+      scanMode: isQuickScan ? 'quick-scan' : isStress ? 'deep-stress' : 'single-model',
+      delayMs: opts.delay ? parseInt(opts.delay, 10) : 0,
+      onlyFree: Boolean(opts.free)
     };
   }
 
@@ -533,6 +595,8 @@ async function main() {
   } else {
     await runSingleModelBenchmark(config);
   }
+
+  setTimeout(() => process.exit(0), 100);
 }
 
 main().catch((err) => {

@@ -2,8 +2,13 @@ export const RECOMMEND_COMBOS_KEY = '__RECOMMEND_COMBOS__';
 export const QUICK_SCAN_KEY = '__QUICK_HEALTH_SCAN__';
 export const DEEP_STRESS_ALL_KEY = '__DEEP_STRESS_ALL__';
 export const FILTER_CATEGORY_KEY = '__FILTER_CATEGORY__';
+export const FILTER_FREE_KEY = '__FILTER_FREE__';
 export const ALL_MODELS_KEY = '__ALL_MODELS__';
 export const CUSTOM_MODEL_KEY = '__CUSTOM_MODEL_INPUT__';
+
+export function isFreeModel(modelId: string): boolean {
+  return /(^|[-_:/])free($|[-_:/])/i.test(modelId) || /:free/i.test(modelId);
+}
 
 export const POPULAR_MODEL_PRESETS = [
   'claude-3-5-sonnet',

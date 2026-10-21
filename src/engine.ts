@@ -115,10 +115,12 @@ export class StressTestEngine {
       let tokenUsage: any;
 
       if (this.config.stream && response.body) {
-        // Simple stream reader to catch first chunk for TTFT
+        // Stream reader to catch first chunk for TTFT and extract SSE usage/model
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let receivedFirstChunk = false;
+        let sseBuffer = '';
+        let streamCompletionChars = 0;
 
         try {
           while (true) {
@@ -128,18 +130,83 @@ export class StressTestEngine {
               ttftMs = Math.round(performance.now() - startTime);
               receivedFirstChunk = true;
             }
-            const chunk = decoder.decode(value, { stream: true });
-            if (!actualModel) {
-              const modelMatch = chunk.match(/"model"\s*:\s*"([^"]+)"/);
-              if (modelMatch) actualModel = modelMatch[1];
+            sseBuffer += decoder.decode(value, { stream: true });
+            const lines = sseBuffer.split('\n');
+            sseBuffer = lines.pop() || '';
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed || trimmed === 'data: [DONE]') continue;
+              if (trimmed.startsWith('data:')) {
+                const jsonStr = trimmed.slice(5).trim();
+                try {
+                  const chunkJson = JSON.parse(jsonStr);
+                  if (!actualModel && chunkJson.model) {
+                    actualModel = chunkJson.model;
+                  }
+                  if (chunkJson.usage) {
+                    tokenUsage = {
+                      promptTokens: chunkJson.usage.prompt_tokens,
+                      completionTokens: chunkJson.usage.completion_tokens,
+                      totalTokens: chunkJson.usage.total_tokens
+                    };
+                  }
+                  if (chunkJson.choices && chunkJson.choices[0]?.delta) {
+                    const delta = chunkJson.choices[0].delta;
+                    if (delta.content) {
+                      streamCompletionChars += delta.content.length;
+                    }
+                    if (delta.reasoning_content) {
+                      streamCompletionChars += delta.reasoning_content.length;
+                    }
+                  }
+                } catch (_) {
+                  // Incomplete or non-JSON chunk
+                }
+              }
             }
+          }
+
+          // Process trailing buffer data if any
+          if (sseBuffer.trim()) {
+            const trimmed = sseBuffer.trim();
+            if (trimmed.startsWith('data:') && trimmed !== 'data: [DONE]') {
+              try {
+                const chunkJson = JSON.parse(trimmed.slice(5).trim());
+                if (!actualModel && chunkJson.model) actualModel = chunkJson.model;
+                if (chunkJson.usage) {
+                  tokenUsage = {
+                    promptTokens: chunkJson.usage.prompt_tokens,
+                    completionTokens: chunkJson.usage.completion_tokens,
+                    totalTokens: chunkJson.usage.total_tokens
+                  };
+                }
+              } catch (_) {}
+            }
+          }
+
+          // Fallback token estimation if upstream gateway omitted usage in stream frames
+          if (!tokenUsage && streamCompletionChars > 0) {
+            const estimatedCompletion = Math.max(1, Math.round(streamCompletionChars / 4));
+            const promptChars = JSON.stringify(payload.messages).length;
+            const estimatedPrompt = Math.max(1, Math.round(promptChars / 4));
+            tokenUsage = {
+              promptTokens: estimatedPrompt,
+              completionTokens: estimatedCompletion,
+              totalTokens: estimatedPrompt + estimatedCompletion
+            };
           }
         } catch (_) {
           // Streaming completed or interrupted
         }
       } else {
         try {
-          const json: any = await response.json();
+          let rawText = await response.text();
+          // Sanitize trailing SSE marker like `data: [DONE]` if router proxy leaked it into non-streaming body
+          if (rawText.includes('data: [DONE]')) {
+            rawText = rawText.replace(/data:\s*\[DONE\][\s\r\n]*$/, '').trim();
+          }
+          const json: any = JSON.parse(rawText);
           actualModel = json.model;
           if (json.usage) {
             tokenUsage = {
@@ -224,6 +291,10 @@ export class StressTestEngine {
 
         if (onProgress) {
           onProgress(completedCount, total, result);
+        }
+
+        if (this.config.delayMs && this.config.delayMs > 0 && queue.length > 0) {
+          await new Promise((resolve) => setTimeout(resolve, this.config.delayMs));
         }
       }
     };

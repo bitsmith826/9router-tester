@@ -14,6 +14,8 @@ export interface BenchmarkConfig {
   modelList?: string[];
   maxTokens?: number;
   scanMode?: 'quick-scan' | 'deep-stress' | 'single-model';
+  delayMs?: number;
+  onlyFree?: boolean;
 }
 
 export interface TokenUsage {
